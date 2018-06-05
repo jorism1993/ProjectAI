@@ -3,3 +3,5 @@
 *.p
 
 /data
+*.pth
+*.pth
