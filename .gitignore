@@ -1,3 +1,5 @@
 *.pyc
 *.pickle
 *.p
+
+/data
