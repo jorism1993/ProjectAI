@@ -42,6 +42,7 @@ except NameError:
     xrange = range  # Python 3
 
 
+
 def parse_args():
   """
   Parse input arguments
@@ -55,13 +56,13 @@ def parse_args():
                       default='cfgs/vgg16.yml', type=str)
   parser.add_argument('--net', dest='net',
                       help='vgg16, res50, res101, res152',
-                      default='res101', type=str)
+                      default='vgg16', type=str)
   parser.add_argument('--set', dest='set_cfgs',
                       help='set config keys', default=None,
                       nargs=argparse.REMAINDER)
   parser.add_argument('--load_dir', dest='load_dir',
                       help='directory to load models',
-                      default="/srv/share/jyang375/models")
+                      default="data/pretrained_model")
   parser.add_argument('--image_dir', dest='image_dir',
                       help='directory to load images for demo',
                       default="images")
@@ -158,7 +159,7 @@ if __name__ == '__main__':
   # train set
   # -- Note: Use validation set and disable the flipped to enable faster loading.
 
-  input_dir = args.load_dir + "/" + args.net + "/" + args.dataset
+  input_dir = args.load_dir #+ "/" + args.net + "/" + args.dataset
   if not os.path.exists(input_dir):
     raise Exception('There is no input directory for loading network from ' + input_dir)
   load_name = os.path.join(input_dir,
