@@ -1,145 +1,103 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun  5 14:46:19 2018
+Created on Wed Jun  6 12:45:46 2018
 
 @author: Joris
 """
+
+import torch
+from torchvision import transforms, datasets
 import os
-import csv
-from PIL import Image
-from resizeimage import resizeimage
 import numpy as np
 import matplotlib.pyplot as plt
-import random
-import matplotlib
+import torchvision
 
 class BelgianDataManager(object):
     
     def __init__(self,PATH_TO_BELGIAN_DATA):
-        
-        self.path_to_data = PATH_TO_BELGIAN_DATA
-        self.folders = self.load_folders()
-        
-        self.path_to_images = []
-        self.image_bounding_box = []
-        self.image_class = []
-        
-        for folder in self.folders:
-            self.load_images_from_folder(folder)   
-                    
-    def load_folders(self):
-        """ Function that returns a list of paths to all the folders containing images
-        """
-        # Load the list of paths, removing the README
-        paths = os.listdir(self.path_to_data)
-        paths = [path for path in paths if os.path.isdir(os.path.join(self.path_to_data,path))]
-        return paths
+
+        self.PATH_TO_BELGIAN_DATA = PATH_TO_BELGIAN_DATA        
     
-    def load_images_from_folder(self,folder_name):
-        """ Given a name of a folder, append a list of paths to all the images
-        """
-        
-        # Define the file_name, this appears to be GT-XXXX.csv
-        file_name = "GT-" + folder_name + ".csv"
-        path_to_csv = os.path.join(self.path_to_data,folder_name,file_name)
-        
-        # Open the csv file
-        with open (path_to_csv,'r') as csvfile:
+    def set_transforms(self, resize=(100,100) ):
+        """ Function to set the transforms 
+            As input it takes an optional argument 'resize', which is a tuple
+            of the required size to resize to. """
             
-            file_info = csv.reader(csvfile, delimiter = ';')
-            next(file_info, None) # Skip the headers lien
-            
-            for row in file_info:
-                image_file = row[0]
-                
-                x1 = float(row[3])
-                y1 = float(row[4])
-                x2 = float(row[5])
-                y2 = float(row[6])
-                
-                classID = row[7]
-                
-                self.path_to_images.append(os.path.join(self.path_to_data,folder_name,image_file))
-                self.image_bounding_box.append(((x1,y1),(x2,y2)))
-                self.image_class.append(classID)
+        data_transforms = {
+            'train': transforms.Compose([transforms.Resize(resize),transforms.ToTensor(),]),
+            'test': transforms.Compose([transforms.Resize(resize),transforms.ToTensor(),])  
+            }
+        return data_transforms
+    
+    def retrieve_image_datasets(self):
+        """ Function to retrieve the image datasets for training and test images """
+        
+        image_datasets = {x: datasets.ImageFolder(os.path.join(self.PATH_TO_BELGIAN_DATA,x),
+                self.data_transforms[x]) for x in ['train','test']}
+        return image_datasets
+    
+    def set_dataloaders(self, batch_size = 4):
+        """Function that defines the data loader object in a dict """
+        
+        dataloaders = {x: torch.utils.data.DataLoader(self.image_datasets[x], batch_size=batch_size,
+                shuffle=True, num_workers=0) for x in ['train','test']}
+        return dataloaders
+
+    def get_dataset_size(self):
+        dataset_sizes = {x: len(self.image_datasets[x]) for x in ['train','test']}
+        return dataset_sizes
+    
+    def get_class_names(self):
+        class_names = self.image_datasets['train'].classes
+        return class_names
+    
+    def load_data(self, batch_size, resize=(100,100) ):
+        """ Function that can be called that loads the data """
+        
+        self.data_transforms = self.set_transforms(resize=resize)
+        self.image_datasets = self.retrieve_image_datasets()
+        dataloaders = self.set_dataloaders(batch_size=batch_size)
+        dataloaders['train'].num_workers = 0
+        dataloaders['test'].num_workers = 0
+        
+        return dataloaders
+    
+    def plot_a_few_images(self, resize = (100,100) ):
+        """ Plot a few images from the training set """
+        
+        self.data_transforms = self.set_transforms(resize = resize)
+        self.image_datasets = self.retrieve_image_datasets()
+        dataloaders = self.set_dataloaders()
+        dataloaders['train'].num_workers = 0
+        dataloaders['test'].num_workers = 0
+        
+        class_names = self.get_class_names()
+        
+        def imshow(inp, title=None):
+            """Imshow for Tensor."""
+            inp = inp.numpy().transpose((1, 2, 0))
+        
+            plt.imshow(inp)
+            if title is not None:
+                plt.title(title)
+            plt.pause(0.001)  # pause a bit so that plots are updated
+
+        # Get a batch of training data
+        inputs, classes = next(iter(dataloaders['train']))
+        
+        # Make a grid from batch
+        out = torchvision.utils.make_grid(inputs)
+        
+        imshow(out, title=[class_names[x] for x in classes])
         return
     
-    def load_image_into_array(self, path_to_image, bounding_box_coordinates, resize = True, resize_shape = [100,100]):
-        """ Load an images into a numpy array, given a path to an image
-            In the case of a resize, also specify new bounding box coordinates
-        """        
-        if resize:
-            with open(path_to_image,'r+b') as f:
-                with Image.open(f) as image:
-                    height, width = image.size
-                    
-                    # Resize the image and convert it to a numpy array
-                    resized_img = resizeimage.resize_cover(image, resize_shape, validate=False)
-                    imarray = np.array(resized_img)
-                    
-                    # New coordinates of the bounding box
-                    x1 = float(bounding_box_coordinates[0][0]) * (resize_shape[0] / width)
-                    y1 = float(bounding_box_coordinates[0][1]) * (resize_shape[1] / height)
-                    x2 = float(bounding_box_coordinates[1][0]) * (resize_shape[0] / width)
-                    y2 = float(bounding_box_coordinates[1][1]) * (resize_shape[1] / height)
-                    new_coordinates = ((round(x1),round(y1)),(round(x2),round(y2)))
-                    
-        else:
-            with open(path_to_image,'r+b') as f:
-                with Image.open(f) as image:                   
-                    imarray = np.array(image)
-                    new_coordinates = bounding_box_coordinates
-                    
-        return imarray, new_coordinates
-    
-    def load_all_images_and_labels(self,resize = True, resize_shape = [100,100]):
-        """ Load all images into a numpy array
-        """
-        
-        images_list = []
-        resized_boxes = []
-        
-        for i,path in enumerate(self.path_to_images):
-            
-            # Retrieve image in numpy array format
-            bounding_box = self.image_bounding_box[i]
-            imarray, bounding_box = self.load_image_into_array(path, bounding_box, resize=resize, resize_shape=resize_shape)
-            resized_boxes.append(bounding_box)
-            
-            # Resize by 255
-            imarray = imarray / 255.0
-            
-            images_list.append(imarray)
-            
-        immatrix = np.stack(images_list,axis=0)
-        return immatrix, self.image_class, resized_boxes     
-            
-    def plot_images(self):
-        """ Plot 5 random images with bounding box, to show it works """
-        fig = plt.figure()
-            
-        for i in range(5):
-            # Select idx of random image
-            idx = random.randrange(0,len(self.path_to_images))
-            
-            # Retrieve path and bounding box
-            path_to_img = self.path_to_images[idx]
-            bounding_box = self.image_bounding_box[idx]
-            
-            # Retrieve bounding box and box width, height
-            imarray, bounding_box = self.load_image_into_array(path_to_img, bounding_box, resize=True)
-            box_width = bounding_box[1][0] - bounding_box[0][0] 
-            box_height = bounding_box[1][1] - bounding_box[0][1]
-            
-            # Plot
-            ax = fig.add_subplot(1,5,i+1)
-            ax.imshow(imarray)
-            ax.add_patch(matplotlib.patches.Rectangle(bounding_box[0],box_height,box_width,linewidth = 1, edgecolor='r',fill=False))
-
-
 if __name__ == '__main__':
     
-    PATH_TO_BELGIAN_DATA = os.path.join('..','..','data','Belgian','Training')
+    PATH_TO_BELGIAN_DATA = os.path.join('..','..','data','Belgian')
     BelgianData = BelgianDataManager(PATH_TO_BELGIAN_DATA)
     
-    immatrix, labels, boxes = BelgianData.load_all_images_and_labels(resize = True, resize_shape = [100,100])
+    resize = (100,100)
+    batch_size = 4
+    
+    BelgianData.plot_a_few_images(resize)
+    data = BelgianData.load_data(batch_size, resize)
