@@ -36,11 +36,11 @@ class BelgianDataManager(object):
                 self.data_transforms[x]) for x in ['train','test']}
         return image_datasets
     
-    def set_dataloaders(self):
+    def set_dataloaders(self, batch_size = 4):
         """Function that defines the data loader object in a dict """
         
-        dataloaders = {x: torch.utils.data.DataLoader(self.image_datasets[x], batch_size=4,
-                shuffle=True, num_workers=4) for x in ['train','test']}
+        dataloaders = {x: torch.utils.data.DataLoader(self.image_datasets[x], batch_size=batch_size,
+                shuffle=True, num_workers=0) for x in ['train','test']}
         return dataloaders
 
     def get_dataset_size(self):
@@ -51,12 +51,12 @@ class BelgianDataManager(object):
         class_names = self.image_datasets['train'].classes
         return class_names
     
-    def load_data(self, resize=(100,100) ):
+    def load_data(self, batch_size, resize=(100,100) ):
         """ Function that can be called that loads the data """
         
         self.data_transforms = self.set_transforms(resize=resize)
         self.image_datasets = self.retrieve_image_datasets()
-        dataloaders = self.set_dataloaders()
+        dataloaders = self.set_dataloaders(batch_size=batch_size)
         dataloaders['train'].num_workers = 0
         dataloaders['test'].num_workers = 0
         
@@ -97,5 +97,7 @@ if __name__ == '__main__':
     BelgianData = BelgianDataManager(PATH_TO_BELGIAN_DATA)
     
     resize = (100,100)
+    batch_size = 4
+    
     BelgianData.plot_a_few_images(resize)
-    data = BelgianData.load_data(resize)
+    data = BelgianData.load_data(batch_size, resize)
