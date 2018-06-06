@@ -62,10 +62,10 @@ class BelgianDataManager(object):
         
         return dataloaders
     
-    def plot_a_few_images(self):
+    def plot_a_few_images(self, resize = (100,100) ):
         """ Plot a few images from the training set """
         
-        self.data_transforms = self.set_transforms()
+        self.data_transforms = self.set_transforms(resize = resize)
         self.image_datasets = self.retrieve_image_datasets()
         dataloaders = self.set_dataloaders()
         dataloaders['train'].num_workers = 0
@@ -96,5 +96,6 @@ if __name__ == '__main__':
     PATH_TO_BELGIAN_DATA = os.path.join('..','..','data','Belgian')
     BelgianData = BelgianDataManager(PATH_TO_BELGIAN_DATA)
     
-    BelgianData.plot_a_few_images()
-    data = BelgianData.load_data(resize = (400,400))
+    resize = (100,100)
+    BelgianData.plot_a_few_images(resize)
+    data = BelgianData.load_data(resize)
