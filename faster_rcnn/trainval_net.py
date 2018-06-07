@@ -311,7 +311,6 @@ if __name__ == '__main__':
   # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
   #                           sampler=sampler_batch, num_workers=args.num_workers)
 
-
   our_dataloader = DetectionDataset(csv_path='data/detection_data/annotations_multiple_boxes.txt', root_dir='data/detection_data', use_superclass=True)
   train_size = len(our_dataloader)
 
@@ -406,7 +405,7 @@ if __name__ == '__main__':
         adjust_learning_rate(optimizer, args.lr_decay_gamma)
         lr *= args.lr_decay_gamma
 
-    data_iter = iter(our_dataloader)
+    data_iter = iter(dataloader)
     for step in range(iters_per_epoch):
       data = next(data_iter)
 

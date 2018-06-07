@@ -19,8 +19,8 @@
       <file leaf-file-name="trainval_net.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/trainval_net.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="198">
-              <caret line="90" column="33" lean-forward="true" selection-start-line="90" selection-start-column="33" selection-end-line="90" selection-end-column="33" />
+            <state relative-caret-position="210">
+              <caret line="313" column="0" lean-forward="false" selection-start-line="313" selection-start-column="0" selection-end-line="313" selection-end-column="0" />
               <folding>
                 <element signature="e#281#319#0" expanded="true" />
               </folding>
@@ -64,18 +64,6 @@
             <state relative-caret-position="174">
               <caret line="97" column="0" lean-forward="false" selection-start-line="97" selection-start-column="0" selection-end-line="97" selection-end-column="0" />
               <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="DetectionDataset.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lib/dataloader/DetectionDataset.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="93" selection-end-column="18" />
-              <folding>
-                <element signature="e#0#9#0" expanded="true" />
-              </folding>
             </state>
           </provider>
         </entry>
@@ -213,12 +201,6 @@
               <item name="faster_rcnn" type="b2602c69:ProjectViewProjectNode" />
               <item name="faster_rcnn" type="462c0819:PsiDirectoryNode" />
               <item name="lib" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="faster_rcnn" type="b2602c69:ProjectViewProjectNode" />
-              <item name="faster_rcnn" type="462c0819:PsiDirectoryNode" />
-              <item name="lib" type="462c0819:PsiDirectoryNode" />
-              <item name="dataloader" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="faster_rcnn" type="b2602c69:ProjectViewProjectNode" />
@@ -717,9 +699,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="93" selection-end-column="18" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -749,8 +729,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/trainval_net.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="90" column="33" lean-forward="true" selection-start-line="90" selection-start-column="33" selection-end-line="90" selection-end-column="33" />
+        <state relative-caret-position="210">
+          <caret line="313" column="0" lean-forward="false" selection-start-line="313" selection-start-column="0" selection-end-line="313" selection-end-column="0" />
           <folding>
             <element signature="e#281#319#0" expanded="true" />
           </folding>
