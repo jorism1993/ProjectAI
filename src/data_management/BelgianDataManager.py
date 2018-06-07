@@ -36,7 +36,7 @@ class BelgianDataManager(object):
         image_datasets = {x: datasets.ImageFolder(os.path.join(self.PATH_TO_BELGIAN_DATA,x),
                 self.data_transforms[x]) for x in ['train','test']}
         return image_datasets
-    
+
     def set_dataloaders(self, batch_size=4):
         """Function that defines the data loader object in a dict """
         
@@ -51,7 +51,7 @@ class BelgianDataManager(object):
     def get_class_names(self):
         class_names = self.image_datasets['train'].classes
         return class_names
-    
+
     def load_data(self, resize=(100,100), batch_size=64):
         """ Function that can be called that loads the data """
         
@@ -63,10 +63,10 @@ class BelgianDataManager(object):
         
         return dataloaders
     
-    def plot_a_few_images(self):
+    def plot_a_few_images(self, resize = (100,100) ):
         """ Plot a few images from the training set """
         
-        self.data_transforms = self.set_transforms()
+        self.data_transforms = self.set_transforms(resize = resize)
         self.image_datasets = self.retrieve_image_datasets()
         dataloaders = self.set_dataloaders()
         dataloaders['train'].num_workers = 0
@@ -97,5 +97,8 @@ if __name__ == '__main__':
     PATH_TO_BELGIAN_DATA = os.path.join('..','..','data','Belgian')
     BelgianData = BelgianDataManager(PATH_TO_BELGIAN_DATA)
     
-    BelgianData.plot_a_few_images()
-    data = BelgianData.load_data(resize = (400,400))
+    resize = (100,100)
+    batch_size = 4
+    
+    BelgianData.plot_a_few_images(resize)
+    data = BelgianData.load_data(batch_size, resize)

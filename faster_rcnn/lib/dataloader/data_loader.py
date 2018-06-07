@@ -99,3 +99,9 @@ class DetectionDataset(Dataset):
 
 detection_dataset = DetectionDataset(csv_path='../data/detection_data/annotations_multiple_boxes.txt', root_dir='../data/detection_data/')
 detection_dataset.show_example()
+
+data_iter = iter(detection_dataset)
+for i in range(10):
+	data = next(data_iter)
+
+	print(data[3])
