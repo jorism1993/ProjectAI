@@ -60,8 +60,6 @@ class DetectionDataset(Dataset):
 		image = io.imread(img_name)
 
 		image = np.array(image)
-		# image = np.moveaxis(image, -1, 0)
-		# image = np.expand_dims(image, axis=0)
 		img_pil = Image.fromarray(image)
 
 		image_info = np.array([image.shape[0], image.shape[1], 1.5])
@@ -70,9 +68,7 @@ class DetectionDataset(Dataset):
 
 		for i in range(n_bboxes):
 			bbox = self.annotations[idx][i*6+1: i*6+5]
-			# print('width ratio', float(width / image_info[0]))
-			# print('height ratio', float(height / image_info[1]))
-			# sdfds
+			
 			bbox[0] = float(bbox[0]) * float(width / image_info[1])
 			bbox[2] = float(bbox[2]) * float(width / image_info[1])
 			bbox[1] = float(bbox[1]) * float(height / image_info[0])
@@ -90,20 +86,24 @@ class DetectionDataset(Dataset):
 
 
 		image = self.transform(img_pil)
+		image = np.array(image)
+		image = np.moveaxis(image, -1, 0)
+		image = np.expand_dims(image, axis=0)
+
 		data = (image, image_info, bboxes, n_bboxes)
 
 		return data
 
 
 	def show_example(index=0):
-		# fig = plt.figure()
+		fig = plt.figure()
 		ax = plt.subplot(1, 1, 1)
 
 		sample = detection_dataset[5]
 
 		plt.tight_layout()
 		im = sample[0]
-		# im = np.squeeze(im, axis=0)
+		im = np.squeeze(im, axis=0)
 
 		bboxes = sample[2][0]
 		n_bboxes = sample[3]
@@ -114,7 +114,7 @@ class DetectionDataset(Dataset):
 			rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=1,edgecolor='r',facecolor='none')
 			ax.add_patch(rect)
 
-		# im = np.moveaxis(im, 0, -1)	
+		im = np.moveaxis(im, 0, -1)	
 		ax.imshow(im)
 		plt.show()
 
