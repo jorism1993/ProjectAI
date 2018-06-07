@@ -221,7 +221,6 @@ if __name__ == '__main__':
 
   our_dataloader = DetectionDataset(csv_path='../data/detection_data/annotations_multiple_boxes.txt', root_dir='../data/detection_data')
 
-
   # initilize the tensor holder here.
   im_data = torch.FloatTensor(1)
   im_info = torch.FloatTensor(1)
@@ -313,7 +312,7 @@ if __name__ == '__main__':
         adjust_learning_rate(optimizer, args.lr_decay_gamma)
         lr *= args.lr_decay_gamma
 
-    data_iter = iter(our_dataloader)
+    data_iter = iter(dataloader)
     for step in range(iters_per_epoch):
       data = next(data_iter)
       im_data.data.resize_(data[0].size()).copy_(data[0])
