@@ -1,0 +1,7 @@
+snapshots
+mnist.hdf5
+*.swp
+cache
+*.tar.gz
+cifar-10-batches-py/
+

@@ -4,5 +4,11 @@
 
 /data
 *.pth
-*.pth
+
 faster_rcnn/data
+ssd.pytorch/data
+ssd.pytorch/weights
+capsule_networks/data
+capsule_networks/epochs
+pytorch-residual-networks/cifar-10-batches-py
+Papers For Students/
