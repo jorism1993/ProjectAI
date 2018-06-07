@@ -412,6 +412,9 @@ if __name__ == '__main__':
     for step in range(iters_per_epoch):
       data = next(data_iter)
 
+      if data[0] == None:
+        continue
+
       torch_im_data = torch.from_numpy(data[0])
       torch_im_info = torch.from_numpy(np.array([data[1]]))
       torch_gt_boxes = torch.from_numpy(data[2])

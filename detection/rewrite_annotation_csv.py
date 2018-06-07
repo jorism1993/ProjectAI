@@ -17,11 +17,11 @@ with open(csv_path, newline='') as csv_file:
 		if info[-2] == '-1':
 			info[-2] = '11'
 
-		if file_name[0:2] == '04':
-			if file_name in path_to_box_dict:
-				path_to_box_dict[file_name].extend(info)
-			else:
-				path_to_box_dict[file_name] = info
+		# if file_name[0:2] == '04':
+		if file_name in path_to_box_dict:
+			path_to_box_dict[file_name].extend(info)
+		else:
+			path_to_box_dict[file_name] = info
 
 
 with open('annotations_multiple_boxes_only4.csv', 'w', newline='') as csvfile:
