@@ -33,6 +33,8 @@ from model.utils.net_utils import weights_normal_init, save_net, load_net, \
 from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
 
+from dataloader import data_loader
+
 def parse_args():
   """
   Parse input arguments
@@ -216,6 +218,10 @@ if __name__ == '__main__':
   dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
                             sampler=sampler_batch, num_workers=args.num_workers)
 
+
+  our_dataloader = DetectionDataset(csv_path='../data/detection_data/annotations_multiple_boxes.txt', root_dir='../data/detection_data')
+
+
   # initilize the tensor holder here.
   im_data = torch.FloatTensor(1)
   im_info = torch.FloatTensor(1)
@@ -307,7 +313,7 @@ if __name__ == '__main__':
         adjust_learning_rate(optimizer, args.lr_decay_gamma)
         lr *= args.lr_decay_gamma
 
-    data_iter = iter(dataloader)
+    data_iter = iter(our_dataloader)
     for step in range(iters_per_epoch):
       data = next(data_iter)
       im_data.data.resize_(data[0].size()).copy_(data[0])
