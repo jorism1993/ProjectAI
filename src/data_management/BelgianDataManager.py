@@ -4,7 +4,7 @@ Created on Wed Jun  6 12:45:46 2018
 
 @author: Joris
 """
-
+import os
 import torch
 from torchvision import transforms, datasets
 import os
@@ -16,7 +16,8 @@ class BelgianDataManager(object):
     
     def __init__(self,PATH_TO_BELGIAN_DATA):
 
-        self.PATH_TO_BELGIAN_DATA = PATH_TO_BELGIAN_DATA        
+        self.PATH_TO_BELGIAN_DATA = PATH_TO_BELGIAN_DATA
+        print('I am initialized')
     
     def set_transforms(self, resize=(100,100) ):
         """ Function to set the transforms 
@@ -35,12 +36,12 @@ class BelgianDataManager(object):
         image_datasets = {x: datasets.ImageFolder(os.path.join(self.PATH_TO_BELGIAN_DATA,x),
                 self.data_transforms[x]) for x in ['train','test']}
         return image_datasets
-    
-    def set_dataloaders(self, batch_size = 4):
+
+    def set_dataloaders(self, batch_size=4):
         """Function that defines the data loader object in a dict """
         
         dataloaders = {x: torch.utils.data.DataLoader(self.image_datasets[x], batch_size=batch_size,
-                shuffle=True, num_workers=0) for x in ['train','test']}
+                shuffle=True, num_workers=4) for x in ['train','test']}
         return dataloaders
 
     def get_dataset_size(self):
@@ -50,8 +51,8 @@ class BelgianDataManager(object):
     def get_class_names(self):
         class_names = self.image_datasets['train'].classes
         return class_names
-    
-    def load_data(self, batch_size, resize=(100,100) ):
+
+    def load_data(self, resize=(100,100), batch_size=64):
         """ Function that can be called that loads the data """
         
         self.data_transforms = self.set_transforms(resize=resize)
