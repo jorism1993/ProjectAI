@@ -57,7 +57,10 @@ class DetectionDataset(Dataset):
 		# Change the extension from jp2 to jpg
 		img_name = img_name[:-3] + 'jpg'
 
-		image = io.imread(img_name)
+		try:
+			image = io.imread(img_name)
+		except Exception as e:
+			return (None, None, None, None)
 
 		image = np.array(image)
 		img_pil = Image.fromarray(image)
@@ -68,7 +71,7 @@ class DetectionDataset(Dataset):
 
 		for i in range(n_bboxes):
 			bbox = self.annotations[idx][i*6+1: i*6+5]
-			
+
 			bbox[0] = float(bbox[0]) * float(width / image_info[1])
 			bbox[2] = float(bbox[2]) * float(width / image_info[1])
 			bbox[1] = float(bbox[1]) * float(height / image_info[0])
