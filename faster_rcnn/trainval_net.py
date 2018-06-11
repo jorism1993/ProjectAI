@@ -115,7 +115,7 @@ class DetectionDataset(Dataset):
       superclass_label = self.annotations[idx][i*6+6]
 
       if self.use_superclass:
-        bbox.extend(int(float(superclass_label)))
+        bbox.append(int(float(superclass_label)))
       else:
         bbox.append(int(float(class_label)))
 
@@ -411,7 +411,7 @@ if __name__ == '__main__':
         adjust_learning_rate(optimizer, args.lr_decay_gamma)
         lr *= args.lr_decay_gamma
 
-    data_iter = iter(dataloader)
+    data_iter = iter(our_dataloader)
     for step in range(iters_per_epoch):
       data = next(data_iter)
 

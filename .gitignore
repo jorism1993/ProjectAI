@@ -1,6 +1,7 @@
 *.pyc
 *.pickle
 *.p
+*.avi
 
 /data
 *.pth
