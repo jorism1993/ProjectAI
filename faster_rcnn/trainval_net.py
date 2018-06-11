@@ -131,9 +131,6 @@ class DetectionDataset(Dataset):
 
     return data
 
-
-
-
 def parse_args():
   """
   Parse input arguments
