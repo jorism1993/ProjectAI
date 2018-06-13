@@ -14,6 +14,7 @@ import numpy as np
 import argparse
 import pprint
 import pdb
+from PIL import Image
 import time
 
 import torch
@@ -33,7 +34,102 @@ from model.utils.net_utils import weights_normal_init, save_net, load_net, \
 from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
 
-from dataloader import data_loader
+import os
+import torch
+from torch.utils.data import Dataset
+from torchvision import transforms, datasets
+from skimage import io, transform
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import numpy as np
+import pandas as pd
+import csv
+
+width = 800
+height = 600
+
+
+data_transform = transforms.Compose([
+        # transforms.ToTensor(),
+        transforms.Resize((height,width))
+    ])
+
+
+
+class DetectionDataset(Dataset):
+  def __init__(self, csv_path, root_dir, transform=data_transform, use_superclass=False):
+    """
+    Args:
+        csv_file (string): Path to the csv file with annotations.
+        root_dir (string): Directory with all the images.
+        transform (callable, optional): Optional transform to be applied
+            on a sample.
+    """
+    self.annotations = []
+    with open(csv_path, newline='') as csv_file:
+      csv_reader = csv.reader(csv_file, delimiter=';', quotechar='|')
+      for row in csv_reader:
+        self.annotations.append(row)
+
+    self.root_dir = root_dir
+    self.transform = transform
+    self.use_superclass = use_superclass
+
+
+  def __len__(self):
+    return len(self.annotations)
+
+
+  def __getitem__(self, idx):
+    img_name = os.path.join(self.root_dir, self.annotations[idx][0])
+
+    n_bboxes = len(self.annotations[idx])
+    n_bboxes -= 1 # Don't count the name
+    n_bboxes /= 6 # There are 6 information fields per bounding box
+    n_bboxes = int(n_bboxes)
+
+    # Change the extension from jp2 to jpg
+    img_name = img_name[:-3] + 'jpg'
+
+    try:
+      image = io.imread(img_name)
+    except Exception as e:
+      return (None, None, None, None)
+
+    image = np.array(image)
+    img_pil = Image.fromarray(image)
+
+    image_info = np.array([image.shape[0], image.shape[1], 1.5])
+
+    bboxes = np.zeros((1, 20, 5))
+
+    for i in range(n_bboxes):
+      bbox = self.annotations[idx][i*6+1: i*6+5]
+
+      bbox[0] = float(bbox[0]) * float(width / image_info[1])
+      bbox[2] = float(bbox[2]) * float(width / image_info[1])
+      bbox[1] = float(bbox[1]) * float(height / image_info[0])
+      bbox[3] = float(bbox[3]) * float(height / image_info[0])
+
+      class_label = self.annotations[idx][i*6+5]
+      superclass_label = self.annotations[idx][i*6+6]
+
+      if self.use_superclass:
+        bbox.append(int(float(superclass_label)))
+      else:
+        bbox.append(int(float(class_label)))
+
+      bboxes[0, i, :] = bbox
+
+
+    image = self.transform(img_pil)
+    image = np.array(image)
+    image = np.moveaxis(image, -1, 0)
+    image = np.expand_dims(image, axis=0)
+
+    data = (image, image_info, bboxes, n_bboxes)
+
+    return data
 
 def parse_args():
   """
@@ -60,7 +156,7 @@ def parse_args():
                       default=10000, type=int)
 
   parser.add_argument('--save_dir', dest='save_dir',
-                      help='directory to save models', default="models",
+                      help='directory to save models', default="models/detection",
                       type=str)
   parser.add_argument('--nw', dest='num_workers',
                       help='number of worker to load data',
@@ -210,17 +306,16 @@ if __name__ == '__main__':
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-  sampler_batch = sampler(train_size, args.batch_size)
+  # sampler_batch = sampler(train_size, args.batch_size)
 
-  dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, \
-                           imdb.num_classes, training=True)
+  # dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, \
+  #                          imdb.num_classes, training=True)
+  #
+  # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
+  #                           sampler=sampler_batch, num_workers=args.num_workers)
 
-  dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-                            sampler=sampler_batch, num_workers=args.num_workers)
-
-
-  our_dataloader = DetectionDataset(csv_path='../data/detection_data/annotations_multiple_boxes.txt', root_dir='../data/detection_data')
-
+  our_dataloader = DetectionDataset(csv_path='data/detection_data/annotations_multiple_boxes.txt', root_dir='data/detection_data', use_superclass=True)
+  train_size = len(our_dataloader)
 
   # initilize the tensor holder here.
   im_data = torch.FloatTensor(1)
@@ -316,10 +411,19 @@ if __name__ == '__main__':
     data_iter = iter(our_dataloader)
     for step in range(iters_per_epoch):
       data = next(data_iter)
-      im_data.data.resize_(data[0].size()).copy_(data[0])
-      im_info.data.resize_(data[1].size()).copy_(data[1])
-      gt_boxes.data.resize_(data[2].size()).copy_(data[2])
-      num_boxes.data.resize_(data[3].size()).copy_(data[3])
+
+      if data[0] == None:
+        continue
+
+      torch_im_data = torch.from_numpy(data[0])
+      torch_im_info = torch.from_numpy(np.array([data[1]]))
+      torch_gt_boxes = torch.from_numpy(data[2])
+      torch_num_boxes = torch.from_numpy(np.array([data[3]]))
+
+      im_data.data.resize_(torch_im_data.size()).copy_(torch_im_data)
+      im_info.data.resize_(torch_im_info.size()).copy_(torch_im_info)
+      gt_boxes.data.resize_(torch_gt_boxes.size()).copy_(torch_gt_boxes)
+      num_boxes.data.resize_(torch_num_boxes.size()).copy_(torch_num_boxes)
 
       fasterRCNN.zero_grad()
       rois, cls_prob, bbox_pred, \
@@ -401,3 +505,87 @@ if __name__ == '__main__':
 
     end = time.time()
     print(end - start)
+
+class DetectionDataset(Dataset):
+	def __init__(self, csv_path, root_dir, transform=None, use_superclass=False):
+		"""
+		Args:
+		    csv_file (string): Path to the csv file with annotations.
+		    root_dir (string): Directory with all the images.
+		    transform (callable, optional): Optional transform to be applied
+		        on a sample.
+		"""
+		self.annotations = []
+		with open(csv_path, newline='') as csv_file:
+			csv_reader = csv.reader(csv_file, delimiter=';', quotechar='|')
+			for row in csv_reader:
+				self.annotations.append(row)
+
+		self.root_dir = root_dir
+		self.transform = transform
+		self.use_superclass = use_superclass
+
+
+	def __len__(self):
+		return len(self.annotations)
+
+
+	def __getitem__(self, idx):
+		img_name = os.path.join(self.root_dir, self.annotations[idx][0])
+
+		n_bboxes = len(self.annotations[idx])
+		n_bboxes -= 1 # Don't count the name
+		n_bboxes /= 6 # There are 6 information fields per bounding box
+		n_bboxes = int(n_bboxes)
+
+		# Change the extension from jp2 to jpg
+		img_name = img_name[:-3] + 'jpg'
+
+		image = io.imread(img_name)
+		image = np.array(image)
+		image = np.moveaxis(image, -1, 0)
+		image = np.expand_dims(image, axis=0)
+
+		image_info = np.array([image.shape[2], image.shape[3], 1.5])
+
+		bboxes = np.zeros((1, 20, 5))
+
+		for i in range(n_bboxes):
+			bbox = self.annotations[idx][i*6+1: i*6+5]
+			class_label = self.annotations[idx][i*6+5]
+			superclass_label = self.annotations[idx][i*6+6]
+
+			if self.use_superclass:
+				bbox.extend(int(float(superclass_label)))
+			else:
+				bbox.append(int(float(class_label)))
+
+			bboxes[0, i, :] = bbox
+
+		data = (image, image_info, bboxes, n_bboxes)
+
+		return data
+
+
+	def show_example(index=0):
+		fig = plt.figure()
+		ax = plt.subplot(1, 1, 1)
+
+		sample = detection_dataset[5]
+
+		plt.tight_layout()
+		im = sample[0]
+		im = np.squeeze(im, axis=0)
+
+		bboxes = sample[2][0]
+		n_bboxes = sample[3]
+		for i in range(n_bboxes):
+			bbox = bboxes[i]
+			bbox = bbox.reshape(-1)
+
+			rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=1,edgecolor='r',facecolor='none')
+			ax.add_patch(rect)
+
+		im = np.moveaxis(im, 0, -1)
+		ax.imshow(im)
+		plt.show()

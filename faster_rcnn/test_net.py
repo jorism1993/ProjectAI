@@ -39,6 +39,79 @@ except NameError:
     xrange = range  # Python 3
 
 
+class DetectionDataset(Dataset):
+    def __init__(self, csv_path, root_dir, transform=data_transform, use_superclass=False):
+        """
+        Args:
+            csv_file (string): Path to the csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        self.annotations = []
+        with open(csv_path, newline='') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=';', quotechar='|')
+            for row in csv_reader:
+                self.annotations.append(row)
+
+        self.root_dir = root_dir
+        self.transform = transform
+        self.use_superclass = use_superclass
+
+    def __len__(self):
+        return len(self.annotations)
+
+    def __getitem__(self, idx):
+        img_name = os.path.join(self.root_dir, self.annotations[idx][0])
+
+        n_bboxes = len(self.annotations[idx])
+        n_bboxes -= 1  # Don't count the name
+        n_bboxes /= 6  # There are 6 information fields per bounding box
+        n_bboxes = int(n_bboxes)
+
+        # Change the extension from jp2 to jpg
+        img_name = img_name[:-3] + 'jpg'
+
+        try:
+            image = io.imread(img_name)
+        except Exception as e:
+            return (None, None, None, None)
+
+        image = np.array(image)
+        img_pil = Image.fromarray(image)
+
+        image_info = np.array([image.shape[0], image.shape[1], 1.5])
+
+        bboxes = np.zeros((1, 20, 5))
+
+        for i in range(n_bboxes):
+            bbox = self.annotations[idx][i * 6 + 1: i * 6 + 5]
+
+            bbox[0] = float(bbox[0]) * float(width / image_info[1])
+            bbox[2] = float(bbox[2]) * float(width / image_info[1])
+            bbox[1] = float(bbox[1]) * float(height / image_info[0])
+            bbox[3] = float(bbox[3]) * float(height / image_info[0])
+
+            class_label = self.annotations[idx][i * 6 + 5]
+            superclass_label = self.annotations[idx][i * 6 + 6]
+
+            if self.use_superclass:
+                bbox.append(int(float(superclass_label)))
+            else:
+                bbox.append(int(float(class_label)))
+
+            bboxes[0, i, :] = bbox
+
+        image = self.transform(img_pil)
+        image = np.array(image)
+        image = np.moveaxis(image, -1, 0)
+        image = np.expand_dims(image, axis=0)
+
+        data = (image, image_info, bboxes, n_bboxes)
+
+        return data
+
+
 def parse_args():
   """
   Parse input arguments
@@ -57,7 +130,7 @@ def parse_args():
                       help='set config keys', default=None,
                       nargs=argparse.REMAINDER)
   parser.add_argument('--load_dir', dest='load_dir',
-                      help='directory to load models', default="models",
+                      help='directory to load models', default="pmodels",
                       type=str)
   parser.add_argument('--cuda', dest='cuda',
                       help='whether use CUDA',
@@ -214,13 +287,16 @@ if __name__ == '__main__':
                for _ in xrange(imdb.num_classes)]
 
   output_dir = get_output_dir(imdb, save_name)
-  dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, \
-                        imdb.num_classes, training=False, normalize = False)
-  dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-                            shuffle=False, num_workers=0,
-                            pin_memory=True)
+  # dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, \
+  #                       imdb.num_classes, training=False, normalize = False)
+  # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
+  #                           shuffle=False, num_workers=0,
+  #                           pin_memory=True)
 
-  data_iter = iter(dataloader)
+  #TODO: Set to test data
+  our_dataloader = DetectionDataset(csv_path='data/detection_data/annotations_multiple_boxes.txt', root_dir='data/detection_data', use_superclass=True)
+
+  data_iter = iter(our_dataloader)
 
   _t = {'im_detect': time.time(), 'misc': time.time()}
   det_file = os.path.join(output_dir, 'detections.pkl')
@@ -228,12 +304,20 @@ if __name__ == '__main__':
   fasterRCNN.eval()
   empty_array = np.transpose(np.array([[],[],[],[],[]]), (1,0))
   for i in range(num_images):
-
       data = next(data_iter)
-      im_data.data.resize_(data[0].size()).copy_(data[0])
-      im_info.data.resize_(data[1].size()).copy_(data[1])
-      gt_boxes.data.resize_(data[2].size()).copy_(data[2])
-      num_boxes.data.resize_(data[3].size()).copy_(data[3])
+
+      if data[0] == None:
+          continue
+
+      torch_im_data = torch.from_numpy(data[0])
+      torch_im_info = torch.from_numpy(np.array([data[1]]))
+      torch_gt_boxes = torch.from_numpy(data[2])
+      torch_num_boxes = torch.from_numpy(np.array([data[3]]))
+
+      im_data.data.resize_(torch_im_data.size()).copy_(torch_im_data)
+      im_info.data.resize_(torch_im_info.size()).copy_(torch_im_info)
+      gt_boxes.data.resize_(torch_gt_boxes.size()).copy_(torch_gt_boxes)
+      num_boxes.data.resize_(torch_num_boxes.size()).copy_(torch_num_boxes)
 
       det_tic = time.time()
       rois, cls_prob, bbox_pred, \

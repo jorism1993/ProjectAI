@@ -8,11 +8,22 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 import csv
+from PIL import Image
+
+
+width = 800
+height = 600
+
+
+data_transform = transforms.Compose([
+        # transforms.ToTensor(),
+        transforms.Resize((height,width))
+    ])
 
 
 
 class DetectionDataset(Dataset):
-	def __init__(self, csv_path, root_dir, transform=None, use_superclass=False):
+	def __init__(self, csv_path, root_dir, transform=data_transform, use_superclass=False):
 		"""
 		Args:
 		    csv_file (string): Path to the csv file with annotations.
@@ -46,17 +57,26 @@ class DetectionDataset(Dataset):
 		# Change the extension from jp2 to jpg
 		img_name = img_name[:-3] + 'jpg'
 
-		image = io.imread(img_name)
-		image = np.array(image)
-		image = np.moveaxis(image, -1, 0)
-		image = np.expand_dims(image, axis=0)
+		try:
+			image = io.imread(img_name)
+		except Exception as e:
+			return (None, None, None, None)
 
-		image_info = np.array([image.shape[2], image.shape[3], 1.5])
+		image = np.array(image)
+		img_pil = Image.fromarray(image)
+
+		image_info = np.array([image.shape[0], image.shape[1], 1.5])
 
 		bboxes = np.zeros((1, 20, 5))
 
 		for i in range(n_bboxes):
 			bbox = self.annotations[idx][i*6+1: i*6+5]
+
+			bbox[0] = float(bbox[0]) * float(width / image_info[1])
+			bbox[2] = float(bbox[2]) * float(width / image_info[1])
+			bbox[1] = float(bbox[1]) * float(height / image_info[0])
+			bbox[3] = float(bbox[3]) * float(height / image_info[0])
+
 			class_label = self.annotations[idx][i*6+5]
 			superclass_label = self.annotations[idx][i*6+6]
 
@@ -66,6 +86,12 @@ class DetectionDataset(Dataset):
 				bbox.append(int(float(class_label)))
 
 			bboxes[0, i, :] = bbox
+
+
+		image = self.transform(img_pil)
+		image = np.array(image)
+		image = np.moveaxis(image, -1, 0)
+		image = np.expand_dims(image, axis=0)
 
 		data = (image, image_info, bboxes, n_bboxes)
 
