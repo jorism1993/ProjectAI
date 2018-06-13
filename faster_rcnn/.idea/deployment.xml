@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="RoboLab">
+  <component name="PublishConfigData" autoUpload="Always" serverName="DAS4">
     <serverData>
+      <paths name="DAS4">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/var/scratch/prai1827/faster_rcnn" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="RoboLab">
         <serverdata>
           <mappings>

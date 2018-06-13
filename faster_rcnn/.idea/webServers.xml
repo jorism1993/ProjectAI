@@ -10,6 +10,14 @@
           <option name="port" value="22" />
         </fileTransfer>
       </webServer>
+      <webServer id="4b089c6b-4737-4cbf-b8c1-2cd0cce9833e" name="DAS4" url="http://fs0.das4.cs.vu.nl">
+        <fileTransfer host="fs0.das4.cs.vu.nl" port="22" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>

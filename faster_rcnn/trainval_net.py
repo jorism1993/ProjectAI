@@ -297,10 +297,10 @@ if __name__ == '__main__':
   # -- Note: Use validation set and disable the flipped to enable faster loading.
   cfg.TRAIN.USE_FLIPPED = True
   cfg.USE_GPU_NMS = args.cuda
-  imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdb_name)
-  train_size = len(roidb)
-
-  print('{:d} roidb entries'.format(len(roidb)))
+  # imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdb_name)
+  # train_size = len(roidb)
+  #
+  # print('{:d} roidb entries'.format(len(roidb)))
 
   output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
   if not os.path.exists(output_dir):
@@ -323,6 +323,7 @@ if __name__ == '__main__':
   num_boxes = torch.LongTensor(1)
   gt_boxes = torch.FloatTensor(1)
 
+  classes = ['triangles', 'redcircles', 'bluecircles', 'redbluecircles', 'diamonds', 'redtraingles', 'stop', 'forbidden', 'squares', 'rectanglesup', 'rectanglesdown', 'unknown']
 
   # ship to cuda
   if args.cuda:
@@ -342,13 +343,13 @@ if __name__ == '__main__':
 
   # initilize the network here.
   if args.net == 'vgg16':
-    fasterRCNN = vgg16(imdb.classes, pretrained=True, class_agnostic=args.class_agnostic)
+    fasterRCNN = vgg16(classes, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res101':
-    fasterRCNN = resnet(imdb.classes, 101, pretrained=True, class_agnostic=args.class_agnostic)
+    fasterRCNN = resnet(classes, 101, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res50':
-    fasterRCNN = resnet(imdb.classes, 50, pretrained=True, class_agnostic=args.class_agnostic)
+    fasterRCNN = resnet(classes, 50, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res152':
-    fasterRCNN = resnet(imdb.classes, 152, pretrained=True, class_agnostic=args.class_agnostic)
+    fasterRCNN = resnet(classes, 152, pretrained=True, class_agnostic=args.class_agnostic)
   else:
     print("network is not defined")
     pdb.set_trace()
@@ -412,7 +413,7 @@ if __name__ == '__main__':
     for step in range(iters_per_epoch):
       data = next(data_iter)
 
-      if data[0] == None:
+      if data[3] is None:
         continue
 
       torch_im_data = torch.from_numpy(data[0])
@@ -506,86 +507,4 @@ if __name__ == '__main__':
     end = time.time()
     print(end - start)
 
-class DetectionDataset(Dataset):
-	def __init__(self, csv_path, root_dir, transform=None, use_superclass=False):
-		"""
-		Args:
-		    csv_file (string): Path to the csv file with annotations.
-		    root_dir (string): Directory with all the images.
-		    transform (callable, optional): Optional transform to be applied
-		        on a sample.
-		"""
-		self.annotations = []
-		with open(csv_path, newline='') as csv_file:
-			csv_reader = csv.reader(csv_file, delimiter=';', quotechar='|')
-			for row in csv_reader:
-				self.annotations.append(row)
 
-		self.root_dir = root_dir
-		self.transform = transform
-		self.use_superclass = use_superclass
-
-
-	def __len__(self):
-		return len(self.annotations)
-
-
-	def __getitem__(self, idx):
-		img_name = os.path.join(self.root_dir, self.annotations[idx][0])
-
-		n_bboxes = len(self.annotations[idx])
-		n_bboxes -= 1 # Don't count the name
-		n_bboxes /= 6 # There are 6 information fields per bounding box
-		n_bboxes = int(n_bboxes)
-
-		# Change the extension from jp2 to jpg
-		img_name = img_name[:-3] + 'jpg'
-
-		image = io.imread(img_name)
-		image = np.array(image)
-		image = np.moveaxis(image, -1, 0)
-		image = np.expand_dims(image, axis=0)
-
-		image_info = np.array([image.shape[2], image.shape[3], 1.5])
-
-		bboxes = np.zeros((1, 20, 5))
-
-		for i in range(n_bboxes):
-			bbox = self.annotations[idx][i*6+1: i*6+5]
-			class_label = self.annotations[idx][i*6+5]
-			superclass_label = self.annotations[idx][i*6+6]
-
-			if self.use_superclass:
-				bbox.extend(int(float(superclass_label)))
-			else:
-				bbox.append(int(float(class_label)))
-
-			bboxes[0, i, :] = bbox
-
-		data = (image, image_info, bboxes, n_bboxes)
-
-		return data
-
-
-	def show_example(index=0):
-		fig = plt.figure()
-		ax = plt.subplot(1, 1, 1)
-
-		sample = detection_dataset[5]
-
-		plt.tight_layout()
-		im = sample[0]
-		im = np.squeeze(im, axis=0)
-
-		bboxes = sample[2][0]
-		n_bboxes = sample[3]
-		for i in range(n_bboxes):
-			bbox = bboxes[i]
-			bbox = bbox.reshape(-1)
-
-			rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=1,edgecolor='r',facecolor='none')
-			ax.add_patch(rect)
-
-		im = np.moveaxis(im, 0, -1)
-		ax.imshow(im)
-		plt.show()
