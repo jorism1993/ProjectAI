@@ -50,30 +50,52 @@ height = 600
 
 
 data_transform = transforms.Compose([
-        # transforms.ToTensor(),
         transforms.Resize((height,width))
     ])
 
 
 
 class DetectionDataset(Dataset):
-  def __init__(self, csv_path, root_dir, transform=data_transform, use_superclass=False):
+
+  def __init__(self, root_dir, transform=data_transform, use_superclass=False, use_data='all'):
     """
     Args:
-        csv_file (string): Path to the csv file with annotations.
-        root_dir (string): Directory with all the images.
-        transform (callable, optional): Optional transform to be applied
-            on a sample.
+        root_dir (string): Directory with all the images and annotation files
+        transform (callable, optional): Optional transform to be applied on a sample.
+        use_superclass (boolean, optional): use superclasses for the Belgian dataset rather than normal classes
+        use_data (string, optional): specify which data source to use ('belgian', 'german', 'all')
     """
-    self.annotations = []
-    with open(csv_path, newline='') as csv_file:
-      csv_reader = csv.reader(csv_file, delimiter=';', quotechar='|')
-      for row in csv_reader:
-        self.annotations.append(row)
 
+    self.annotations = []
     self.root_dir = root_dir
     self.transform = transform
     self.use_superclass = use_superclass
+
+    belgian = use_data == 'belgian' or use_data == 'all'
+    german = use_data == 'german' or use_data == 'all'
+
+    if belgian:
+      self.load_csv_to_annotation_list('belgian')
+
+    if german:
+      self.load_csv_to_annotation_list('german')
+
+
+  def load_csv_to_annotation_list(self, dataset):
+    csv_path = self.root_dir + dataset + '_annotations.txt'
+    folder = dataset + '/'
+    if dataset == 'belgian':
+      extension = 'jpg'
+    if dataset == 'german':
+      extension = 'ppm'
+
+    with open(csv_path, newline='') as csv_file:
+      csv_reader = csv.reader(csv_file, delimiter=';', quotechar='|')
+
+      for row in csv_reader:
+        row[0] = folder + row[0]
+        row[0] = row[0][:-3] + extension
+        self.annotations.append(row)
 
 
   def __len__(self):
@@ -87,9 +109,6 @@ class DetectionDataset(Dataset):
     n_bboxes -= 1 # Don't count the name
     n_bboxes /= 6 # There are 6 information fields per bounding box
     n_bboxes = int(n_bboxes)
-
-    # Change the extension from jp2 to jpg
-    img_name = img_name[:-3] + 'jpg'
 
     try:
       image = io.imread(img_name)
@@ -130,6 +149,10 @@ class DetectionDataset(Dataset):
     data = (image, image_info, bboxes, n_bboxes)
 
     return data
+
+
+
+
 
 def parse_args():
   """
@@ -314,7 +337,7 @@ if __name__ == '__main__':
   # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
   #                           sampler=sampler_batch, num_workers=args.num_workers)
 
-  our_dataloader = DetectionDataset(csv_path='data/detection_data/annotations_multiple_boxes.txt', root_dir='data/detection_data', use_superclass=True)
+  our_dataloader = DetectionDataset(root_dir='data/detection_data', use_superclass=True)
   train_size = len(our_dataloader)
 
   # initilize the tensor holder here.
