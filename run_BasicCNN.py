@@ -1,5 +1,7 @@
 from src.data_management.BelgianDataManager import BelgianDataManager
-from BasicCNN.Network import *
+from src.data_management.GermanDataManager import GermanDataManager
+# from BasicCNN.Network import *
+from BasicCNN.STN import *
 import torch.optim as optim
 
 from collections import Counter
@@ -7,8 +9,10 @@ from collections import Counter
 
 
 belgian_data_path = './data/Belgian'
-DataManager = BelgianDataManager(belgian_data_path)
-DataLoader = DataManager.load_data(resize = (32,32), batch_size=1)
+german_data_path = './data/German'
+# DataManager = BelgianDataManager(belgian_data_path)
+DataManager = GermanDataManager(german_data_path)
+DataLoader = DataManager.load_data(resize = (28,28), batch_size=64)
 TrainDataLoader = DataLoader['train']
 TestDataLoader = DataLoader['test']
 
@@ -33,13 +37,25 @@ def print_statistics():
 num_classes = len(TrainDataLoader.dataset.classes)
 
 
-CNN = Net(num_classes, input_size=16)
+# CNN = Net(num_classes, input_size=16)
 
 
-optimizer = optim.SGD(CNN.parameters(), lr=0.001, momentum=0.9)
 
-print(len(TestDataLoader))
-print('Start training the model')
-train(CNN, TrainDataLoader, TestDataLoader, optimizer, number_of_epochs=3)
-print('Perform a test')
-test(CNN, TestDataLoader)
+
+# print(len(TestDataLoader))
+# print('Start training the model')
+# train(CNN, TrainDataLoader, TestDataLoader, optimizer, number_of_epochs=25)
+# print('Perform a test')
+# test(CNN, TestDataLoader)
+
+#Run STN
+
+STN = Net(num_classes)
+
+optimizer = optim.Adam(STN.parameters(), lr=0.001)
+
+number_of_epochs = 25
+
+for epoch in range(1, number_of_epochs):
+    train(epoch, TrainDataLoader, STN, optimizer)
+    test(TestDataLoader, STN)
