@@ -13,3 +13,5 @@ capsule_networks/data
 capsule_networks/epochs
 pytorch-residual-networks/cifar-10-batches-py
 Papers For Students/
+
+rewrite_folder.py
