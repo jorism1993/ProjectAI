@@ -82,8 +82,8 @@ class DetectionDataset(Dataset):
 
 
   def load_csv_to_annotation_list(self, dataset):
-    csv_path = self.root_dir + dataset + '_annotations.txt'
-    folder = dataset + '/'
+    csv_path = self.root_dir + '/' + dataset + '_annotations.txt'
+    folder = dataset + '_resized/'
     if dataset == 'belgian':
       extension = 'jpg'
     if dataset == 'german':
@@ -170,16 +170,16 @@ def parse_args():
                       default=1, type=int)
   parser.add_argument('--epochs', dest='max_epochs',
                       help='number of epochs to train',
-                      default=20, type=int)
+                      default=1, type=int)
   parser.add_argument('--disp_interval', dest='disp_interval',
                       help='number of iterations to display',
-                      default=100, type=int)
+                      default=1, type=int)
   parser.add_argument('--checkpoint_interval', dest='checkpoint_interval',
                       help='number of iterations to display',
                       default=10000, type=int)
 
   parser.add_argument('--save_dir', dest='save_dir',
-                      help='directory to save models', default="models/detection",
+                      help='directory to save models', default="/output",
                       type=str)
   parser.add_argument('--nw', dest='num_workers',
                       help='number of worker to load data',
@@ -320,25 +320,20 @@ if __name__ == '__main__':
   # -- Note: Use validation set and disable the flipped to enable faster loading.
   cfg.TRAIN.USE_FLIPPED = True
   cfg.USE_GPU_NMS = args.cuda
-  # imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdb_name)
-  # train_size = len(roidb)
-  #
-  # print('{:d} roidb entries'.format(len(roidb)))
+  imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdb_name)
+  train_size = len(roidb)
 
-  output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
-  if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+  print('{:d} roidb entries'.format(len(roidb)))
 
-  # sampler_batch = sampler(train_size, args.batch_size)
+  output_dir = args.save_dir
 
-  # dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, \
-  #                          imdb.num_classes, training=True)
-  #
-  # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-  #                           sampler=sampler_batch, num_workers=args.num_workers)
+  sampler_batch = sampler(train_size, args.batch_size)
 
-  our_dataloader = DetectionDataset(root_dir='data/detection_data', use_superclass=True)
-  train_size = len(our_dataloader)
+  dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, \
+                           imdb.num_classes, training=True)
+
+  dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
+                            sampler=sampler_batch, num_workers=args.num_workers)
 
   # initilize the tensor holder here.
   im_data = torch.FloatTensor(1)
@@ -418,46 +413,37 @@ if __name__ == '__main__':
     fasterRCNN = nn.DataParallel(fasterRCNN)
 
   if args.cuda:
-    fasterRCNN.cuda()
+      fasterRCNN.cuda()
 
   iters_per_epoch = int(train_size / args.batch_size)
 
   for epoch in range(args.start_epoch, args.max_epochs + 1):
-    # setting to train mode
-    fasterRCNN.train()
-    loss_temp = 0
-    start = time.time()
+      # setting to train mode
+      fasterRCNN.train()
+      loss_temp = 0
+      start = time.time()
 
-    if epoch % (args.lr_decay_step + 1) == 0:
-        adjust_learning_rate(optimizer, args.lr_decay_gamma)
-        lr *= args.lr_decay_gamma
+      if epoch % (args.lr_decay_step + 1) == 0:
+          adjust_learning_rate(optimizer, args.lr_decay_gamma)
+          lr *= args.lr_decay_gamma
 
-    data_iter = iter(our_dataloader)
-    for step in range(iters_per_epoch):
-      data = next(data_iter)
+      data_iter = iter(dataloader)
+      for step in range(iters_per_epoch):
+          data = next(data_iter)
+          im_data.data.resize_(data[0].size()).copy_(data[0])
+          im_info.data.resize_(data[1].size()).copy_(data[1])
+          gt_boxes.data.resize_(data[2].size()).copy_(data[2])
+          num_boxes.data.resize_(data[3].size()).copy_(data[3])
 
-      if data[3] is None:
-        continue
+          fasterRCNN.zero_grad()
+          rois, cls_prob, bbox_pred, \
+          rpn_loss_cls, rpn_loss_box, \
+          RCNN_loss_cls, RCNN_loss_bbox, \
+          rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
 
-      torch_im_data = torch.from_numpy(data[0])
-      torch_im_info = torch.from_numpy(np.array([data[1]]))
-      torch_gt_boxes = torch.from_numpy(data[2])
-      torch_num_boxes = torch.from_numpy(np.array([data[3]]))
-
-      im_data.data.resize_(torch_im_data.size()).copy_(torch_im_data)
-      im_info.data.resize_(torch_im_info.size()).copy_(torch_im_info)
-      gt_boxes.data.resize_(torch_gt_boxes.size()).copy_(torch_gt_boxes)
-      num_boxes.data.resize_(torch_num_boxes.size()).copy_(torch_num_boxes)
-
-      fasterRCNN.zero_grad()
-      rois, cls_prob, bbox_pred, \
-      rpn_loss_cls, rpn_loss_box, \
-      RCNN_loss_cls, RCNN_loss_bbox, \
-      rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
-
-      loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
-           + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
-      loss_temp += loss.data[0]
+          loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
+                 + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
+          loss_temp += loss.data[0]
 
       # backward
       optimizer.zero_grad()
@@ -465,7 +451,7 @@ if __name__ == '__main__':
       if args.net == "vgg16":
           clip_gradient(fasterRCNN, 10.)
       optimizer.step()
-
+      print('IF statement, should == 0: {}'.format(step % args.disp_interval))
       if step % args.disp_interval == 0:
         end = time.time()
         if step > 0:
@@ -491,6 +477,8 @@ if __name__ == '__main__':
         print("\t\t\tfg/bg=(%d/%d), time cost: %f" % (fg_cnt, bg_cnt, end-start))
         print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f" \
                       % (loss_rpn_cls, loss_rpn_box, loss_rcnn_cls, loss_rcnn_box))
+        print('{{"metric": "loss", "value": {}}}'.format(loss_temp))
+        print('{{"metric": "time", "value": {}}}'.format(end-start))
         if args.use_tfboard:
           info = {
             'loss': loss_temp,
