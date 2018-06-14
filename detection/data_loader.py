@@ -11,8 +11,8 @@ import csv
 from PIL import Image
 
 
-width = 800
-height = 600
+width = 600
+height = 450
 
 
 data_transform = transforms.Compose([
@@ -117,11 +117,15 @@ class DetectionDataset(Dataset):
 		return data
 
 
-	def show_example(index=0):
+	def get_file_path(self, idx):
+		return self.annotations[idx][0]
+
+
+	def show_example(self, index=0):
 		fig = plt.figure()
 		ax = plt.subplot(1, 1, 1)
 
-		sample = detection_dataset[0]
+		sample = self[0]
 
 		plt.tight_layout()
 		im = sample[0]
@@ -142,6 +146,6 @@ class DetectionDataset(Dataset):
 
 
 
-detection_dataset = DetectionDataset(root_dir='../data/detection_data/', use_data='all')
-print('Number of pictures:', len(detection_dataset))
-detection_dataset.show_example()
+# detection_dataset = DetectionDataset(root_dir='../data/detection_data/', use_data='all')
+# print('Number of pictures:', len(detection_dataset))
+# detection_dataset.show_example()
