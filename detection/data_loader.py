@@ -11,8 +11,8 @@ import csv
 from PIL import Image
 
 
-width = 600
-height = 450
+width = 1200
+height = 800
 
 
 data_transform = transforms.Compose([
@@ -39,18 +39,28 @@ class DetectionDataset(Dataset):
 
 		belgian = use_data == 'belgian' or use_data == 'all'
 		german = use_data == 'german' or use_data == 'all'
+		test = use_data == 'test'
+
+		if test:
+			self.rescale = False
+			self.rescale_bbox = True
+			self.load_csv_to_annotation_list('video')
+			return
 
 		if belgian:
+			self.rescale = True
 			self.load_csv_to_annotation_list('belgian')
 
 		if german:
+			self.rescale = True
 			self.load_csv_to_annotation_list('german')
+
 
 
 	def load_csv_to_annotation_list(self, dataset):
 		csv_path = self.root_dir + dataset + '_annotations.txt'
 		folder = dataset + '/'
-		if dataset == 'belgian':
+		if dataset == 'belgian' or dataset == 'video':
 			extension = 'jpg'
 		if dataset == 'german':
 			extension = 'ppm'
@@ -88,13 +98,17 @@ class DetectionDataset(Dataset):
 
 		bboxes = np.zeros((1, 20, 5))
 
+		if n_bboxes > 20:
+			bboxes = np.zeros((1, n_bboxes, 5))
+
 		for i in range(n_bboxes):
 			bbox = self.annotations[idx][i*6+1: i*6+5]
 
-			bbox[0] = float(bbox[0]) * float(width / image_info[1])
-			bbox[2] = float(bbox[2]) * float(width / image_info[1])
-			bbox[1] = float(bbox[1]) * float(height / image_info[0])
-			bbox[3] = float(bbox[3]) * float(height / image_info[0])
+			if self.rescale:
+				bbox[0] = float(bbox[0]) * float(width / image_info[1])
+				bbox[2] = float(bbox[2]) * float(width / image_info[1])
+				bbox[1] = float(bbox[1]) * float(height / image_info[0])
+				bbox[3] = float(bbox[3]) * float(height / image_info[0])
 
 			class_label = self.annotations[idx][i*6+5]
 			superclass_label = self.annotations[idx][i*6+6]
@@ -125,7 +139,7 @@ class DetectionDataset(Dataset):
 		fig = plt.figure()
 		ax = plt.subplot(1, 1, 1)
 
-		sample = self[0]
+		sample = self[index]
 
 		plt.tight_layout()
 		im = sample[0]
@@ -133,9 +147,20 @@ class DetectionDataset(Dataset):
 
 		bboxes = sample[2][0]
 		n_bboxes = sample[3]
+		image_info = sample[1]
+
 		for i in range(n_bboxes):	
 			bbox = bboxes[i]
 			bbox = bbox.reshape(-1)
+
+			
+			if self.rescale_bbox:
+				bbox[0] = bbox[0] * image_info[1]
+				bbox[1] = bbox[1] * image_info[0]
+				bbox[2] = bbox[2] * image_info[1]
+				bbox[3] = bbox[3] * image_info[0]
+
+			print(bbox)
 
 			rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=1,edgecolor='r',facecolor='none')
 			ax.add_patch(rect)
