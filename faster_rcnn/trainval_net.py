@@ -53,107 +53,6 @@ data_transform = transforms.Compose([
         transforms.Resize((height,width))
     ])
 
-
-
-class DetectionDataset(Dataset):
-
-  def __init__(self, root_dir, transform=data_transform, use_superclass=False, use_data='all'):
-    """
-    Args:
-        root_dir (string): Directory with all the images and annotation files
-        transform (callable, optional): Optional transform to be applied on a sample.
-        use_superclass (boolean, optional): use superclasses for the Belgian dataset rather than normal classes
-        use_data (string, optional): specify which data source to use ('belgian', 'german', 'all')
-    """
-
-    self.annotations = []
-    self.root_dir = root_dir
-    self.transform = transform
-    self.use_superclass = use_superclass
-
-    belgian = use_data == 'belgian' or use_data == 'all'
-    german = use_data == 'german' or use_data == 'all'
-
-    if belgian:
-      self.load_csv_to_annotation_list('belgian')
-
-    if german:
-      self.load_csv_to_annotation_list('german')
-
-
-  def load_csv_to_annotation_list(self, dataset):
-    csv_path = self.root_dir + '/' + dataset + '_annotations.txt'
-    folder = dataset + '_resized/'
-    if dataset == 'belgian':
-      extension = 'jpg'
-    if dataset == 'german':
-      extension = 'ppm'
-
-    with open(csv_path, newline='') as csv_file:
-      csv_reader = csv.reader(csv_file, delimiter=';', quotechar='|')
-
-      for row in csv_reader:
-        row[0] = folder + row[0]
-        row[0] = row[0][:-3] + extension
-        self.annotations.append(row)
-
-
-  def __len__(self):
-    return len(self.annotations)
-
-
-  def __getitem__(self, idx):
-    img_name = os.path.join(self.root_dir, self.annotations[idx][0])
-
-    n_bboxes = len(self.annotations[idx])
-    n_bboxes -= 1 # Don't count the name
-    n_bboxes /= 6 # There are 6 information fields per bounding box
-    n_bboxes = int(n_bboxes)
-
-    try:
-      image = io.imread(img_name)
-    except Exception as e:
-      return (None, None, None, None)
-
-    image = np.array(image)
-    img_pil = Image.fromarray(image)
-
-    image_info = np.array([image.shape[0], image.shape[1], 1.5])
-
-    bboxes = np.zeros((1, 20, 5))
-
-    for i in range(n_bboxes):
-      bbox = self.annotations[idx][i*6+1: i*6+5]
-
-      bbox[0] = float(bbox[0]) * float(width / image_info[1])
-      bbox[2] = float(bbox[2]) * float(width / image_info[1])
-      bbox[1] = float(bbox[1]) * float(height / image_info[0])
-      bbox[3] = float(bbox[3]) * float(height / image_info[0])
-
-      class_label = self.annotations[idx][i*6+5]
-      superclass_label = self.annotations[idx][i*6+6]
-
-      if self.use_superclass:
-        bbox.append(int(float(superclass_label)))
-      else:
-        bbox.append(int(float(class_label)))
-
-      bboxes[0, i, :] = bbox
-
-
-    image = self.transform(img_pil)
-    image = np.array(image)
-    image = np.moveaxis(image, -1, 0)
-    image = np.expand_dims(image, axis=0)
-
-    data = (image, image_info, bboxes, n_bboxes)
-
-    return data
-
-
-
-
-
 def parse_args():
   """
   Parse input arguments
@@ -170,7 +69,7 @@ def parse_args():
                       default=1, type=int)
   parser.add_argument('--epochs', dest='max_epochs',
                       help='number of epochs to train',
-                      default=1, type=int)
+                      default=10, type=int)
   parser.add_argument('--disp_interval', dest='disp_interval',
                       help='number of iterations to display',
                       default=1, type=int)
@@ -195,7 +94,7 @@ def parse_args():
                       action='store_true')
   parser.add_argument('--bs', dest='batch_size',
                       help='batch_size',
-                      default=1, type=int)
+                      default=8, type=int)
   parser.add_argument('--cag', dest='class_agnostic',
                       help='whether perform class_agnostic bbox regression',
                       action='store_true')
@@ -373,6 +272,7 @@ if __name__ == '__main__':
     pdb.set_trace()
 
   fasterRCNN.create_architecture()
+  print("Architecture created")
 
   lr = cfg.TRAIN.LEARNING_RATE
   lr = args.lr
@@ -387,6 +287,8 @@ if __name__ == '__main__':
                 'weight_decay': cfg.TRAIN.BIAS_DECAY and cfg.TRAIN.WEIGHT_DECAY or 0}]
       else:
         params += [{'params':[value],'lr':lr, 'weight_decay': cfg.TRAIN.WEIGHT_DECAY}]
+
+  print("Parameters loaded")
 
   if args.optimizer == "adam":
     lr = lr * 0.1
@@ -416,7 +318,7 @@ if __name__ == '__main__':
       fasterRCNN.cuda()
 
   iters_per_epoch = int(train_size / args.batch_size)
-
+  print("Start with training process\n")
   for epoch in range(args.start_epoch, args.max_epochs + 1):
       # setting to train mode
       fasterRCNN.train()
@@ -429,6 +331,7 @@ if __name__ == '__main__':
 
       data_iter = iter(dataloader)
       for step in range(iters_per_epoch):
+          print("Process step: {}/{}".format(step, iters_per_epoch))
           data = next(data_iter)
           im_data.data.resize_(data[0].size()).copy_(data[0])
           im_info.data.resize_(data[1].size()).copy_(data[1])
@@ -443,7 +346,11 @@ if __name__ == '__main__':
 
           loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
                  + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
-          loss_temp += loss.data[0]
+          print("Temp loss: {}".format(loss.data[0]))
+          if not np.isnan(loss.data[0]):
+            loss_temp += loss.data[0]
+          print("Temp loss total: {}".format(loss_temp))
+          # print('{{"metric": "loss", "value": {}}}'.format(loss_temp)
 
       # backward
       optimizer.zero_grad()
@@ -456,7 +363,6 @@ if __name__ == '__main__':
         end = time.time()
         if step > 0:
           loss_temp /= args.disp_interval
-
         if args.mGPUs:
           loss_rpn_cls = rpn_loss_cls.mean().data[0]
           loss_rpn_box = rpn_loss_box.mean().data[0]
@@ -477,8 +383,10 @@ if __name__ == '__main__':
         print("\t\t\tfg/bg=(%d/%d), time cost: %f" % (fg_cnt, bg_cnt, end-start))
         print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f" \
                       % (loss_rpn_cls, loss_rpn_box, loss_rcnn_cls, loss_rcnn_box))
-        print('{{"metric": "loss", "value": {}}}'.format(loss_temp))
-        print('{{"metric": "time", "value": {}}}'.format(end-start))
+        print('{{"metric": "loss", "value": {}}}'.format(loss_temp)
+        print('{{"metric": "epoch", "value": {}}}'.format(epoch)
+        print('{{"metric": "time", "value": {}}}'.format(end-start)
+
         if args.use_tfboard:
           info = {
             'loss': loss_temp,
@@ -493,29 +401,29 @@ if __name__ == '__main__':
         loss_temp = 0
         start = time.time()
 
-    if args.mGPUs:
-      save_name = os.path.join(output_dir, 'faster_rcnn_{}_{}_{}.pth'.format(args.session, epoch, step))
-      save_checkpoint({
-        'session': args.session,
-        'epoch': epoch + 1,
-        'model': fasterRCNN.module.state_dict(),
-        'optimizer': optimizer.state_dict(),
-        'pooling_mode': cfg.POOLING_MODE,
-        'class_agnostic': args.class_agnostic,
-      }, save_name)
-    else:
-      save_name = os.path.join(output_dir, 'faster_rcnn_{}_{}_{}.pth'.format(args.session, epoch, step))
-      save_checkpoint({
-        'session': args.session,
-        'epoch': epoch + 1,
-        'model': fasterRCNN.state_dict(),
-        'optimizer': optimizer.state_dict(),
-        'pooling_mode': cfg.POOLING_MODE,
-        'class_agnostic': args.class_agnostic,
-      }, save_name)
-    print('save model: {}'.format(save_name))
+      if args.mGPUs:
+        save_name = os.path.join(output_dir, 'faster_rcnn_traffic.pth')
+        save_checkpoint({
+          'session': args.session,
+          'epoch': epoch + 1,
+          'model': fasterRCNN.module.state_dict(),
+          'optimizer': optimizer.state_dict(),
+          'pooling_mode': cfg.POOLING_MODE,
+          'class_agnostic': args.class_agnostic,
+        }, save_name)
+      else:
+        save_name = os.path.join(output_dir, 'faster_rcnn_traffic.pth')
+        save_checkpoint({
+          'session': args.session,
+          'epoch': epoch + 1,
+          'model': fasterRCNN.state_dict(),
+          'optimizer': optimizer.state_dict(),
+          'pooling_mode': cfg.POOLING_MODE,
+          'class_agnostic': args.class_agnostic,
+        }, save_name)
+      print('save model: {}'.format(save_name))
 
-    end = time.time()
-    print(end - start)
+      end = time.time()
+      print(end - start)
 
 
