@@ -1,0 +1,32 @@
+<annotation>
+  <folder>VOC2007</folder>
+  <filename>image.002929.jpg</filename>
+  <source>
+    <database>The VOC2007 Database</database>
+    <annotation>PASCAL VOC2007</annotation>
+    <image>flickr</image>
+    <flickrid>0</flickrid>
+  </source>
+  <owner>
+    <flickrid>Group 27</flickrid>
+    <name>?</name>
+  </owner>
+  <size>
+    <width>600</width>
+    <height>450</height>
+    <depth>3</depth>
+  </size>
+  <segmented>0</segmented>
+  <object>
+    <name>traffic_sign</name>
+    <pose>Unspecified</pose>
+    <truncated>0</truncated>
+    <difficult>0</difficult>
+    <bnbbox>
+      <xmin>492.0257985257985</xmin>
+      <ymin>0.5242718446601942</ymin>
+      <xmax>546.8660933660933</xmax>
+      <ymax>38.84708737864078</ymax>
+    </bnbbox>
+  </object>
+</annotation>

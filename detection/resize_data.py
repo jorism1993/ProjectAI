@@ -4,7 +4,7 @@ from PIL import Image
 import csv
 
 
-root_folder = '../data/detection_data/'
+root_folder = '../faster_rcnn/data/detection_data/'
 
 german_dataset = DetectionDataset(root_dir=root_folder, use_data='belgian', use_superclass=True)
 csv_array = []

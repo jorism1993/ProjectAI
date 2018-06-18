@@ -15,4 +15,6 @@ pytorch-residual-networks/cifar-10-batches-py
 Papers For Students/
 
 rewrite_folder.py
+
 detection/results
+detection/data
