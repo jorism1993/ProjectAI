@@ -3,20 +3,26 @@ from lxml import etree
 from PIL import Image
 import os.path
 
-datasets = ['belgian', 'german']
+train_split = 0.7
+test_split = 0.15
+trainval_split = 0.075
+val_split = 0.075
+
+
+datasets = ['german', 'belgian']
 if len(datasets) == 2:
-	folder_name = 'results/both/Annotations'
+	folder_name = 'results/both/'
 else:
-	folder_name = 'results/{}/Annotations'.format(datasets[0])
+	folder_name = 'results/{}/'.format(datasets[0])
 # dataset = 'belgian'
 
 for dataset in datasets:
 	if dataset == 'german':
-		csv_path = 'data/detection_data/german_annotations.txt'
+		csv_path = '../data/detection_data/german_jpg_annotations.txt'
 		bbox_length = 7
 
 	if dataset == 'belgian':
-		csv_path = 'data/detection_data/belgian_annotations.txt'
+		csv_path = '../data/detection_data/belgian_resized_annotations.txt'
 		bbox_length = 6
 
 	path_to_box_dict = {}
@@ -26,33 +32,53 @@ for dataset in datasets:
 
 		for row in csv_reader:
 			file_name = row[0]
-			info = row[1:7]
 
-			if dataset == 'german':
-				info.append(info[-1])
+			n_bboxes = int((len(row) - 1) / 6)
+			for i in range(n_bboxes):
 
-			if info[-1] == '-1':
-				info[-1] = '11'
+				info = row[(i*6+1):(i*6+7)]
 
-			if info[-2] == '-1':
-				info[-2] = '11'
+				if dataset == 'german':
+					info.append(info[-1])
 
-			# if file_name[0:2] == '04':
-			if file_name in path_to_box_dict:
-				path_to_box_dict[file_name].extend(info)
-			else:
-				path_to_box_dict[file_name] = info
+				if info[-1] == '-1':
+					info[-1] = '11'
 
-	for file in path_to_box_dict:
+				if info[-2] == '-1':
+					info[-2] = '11'
+
+				# if file_name[0:2] == '04':
+				if file_name in path_to_box_dict:
+					path_to_box_dict[file_name].extend(info)
+				else:
+					path_to_box_dict[file_name] = info
+
+
+	for index, file in enumerate(path_to_box_dict):
+
+
 		# Get appropiate image
 		image_path = csv_path.split('/')[:-1]
 		if dataset == 'german':
-			image_path.append('german_resized')
+			image_path.append('german_jpg')
 		if dataset == 'belgian':
 			image_path.append('belgian_resized')
-		image_path.append(file)
+
+		image_path.append(file.split('/')[-1])
+
+		if dataset == 'belgian':
+			image_path[-1] = image_path[-1][:-3] + 'jpg'
+
+
+
 		image_path = '/'.join(image_path)
-		pil_image = Image.open(image_path)
+		try:
+			pil_image = Image.open(image_path)
+		except Exception as e:
+			print('image not found:', image_path)
+			# print('image ' +  str(image_path), + ' not found')
+			continue
+
 		image_width, image_height = pil_image.size
 
 		# Create XML tree
@@ -93,6 +119,7 @@ for dataset in datasets:
 
 		# Add bounding boxes to XML
 		n_bboxes = len(path_to_box_dict[file])
+		
 		n_bboxes /= bbox_length
 		for i in range(int(n_bboxes)):
 			bbox = path_to_box_dict[file][i * bbox_length: i * bbox_length + bbox_length - 1]
@@ -119,6 +146,25 @@ for dataset in datasets:
 			ymax.text = bbox[3]
 
 		tree = etree.ElementTree(root)
+		if dataset == 'belgian':
+			file = file.split('/')[-1]
 		name = os.path.splitext(file)[0]
-		path = folder_name + '/' + name + '.xml'
+		path = folder_name + 'Annotations/' + name + '.xml'
+
+
+		if (index/len(path_to_box_dict)) < train_split:
+			with open(folder_name + 'train.txt', 'a') as myfile:
+				myfile.write(name + '\n')
+		elif (index/len(path_to_box_dict)) < (train_split + test_split):
+			with open(folder_name + 'test.txt', 'a') as myfile:
+				myfile.write(name + '\n')
+		elif (index/len(path_to_box_dict)) < (train_split + test_split + trainval_split):
+			with open(folder_name + 'trainval.txt', 'a') as myfile:
+				myfile.write(name + '\n')
+		elif (index/len(path_to_box_dict)) < (train_split + test_split + trainval_split + val_split):
+			with open(folder_name + 'val.txt', 'a') as myfile:
+				myfile.write(name + '\n')
+
 		tree.write(path, pretty_print=True, encoding="utf-8")
+
+		

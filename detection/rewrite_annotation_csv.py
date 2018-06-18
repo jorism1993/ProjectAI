@@ -1,13 +1,13 @@
 import csv
 
-dataset = 'german'
-# dataset = 'belgian'
+# dataset = 'german'
+dataset = 'belgian'
 
 if dataset == 'german':
-	csv_path = '../data/detection_data/german_annotations_unprocessed.txt'
+	csv_path = '../data/detection_data/german_test_annotations_unprocessed.txt'
 
 if dataset == 'belgian':
-	csv_path = '../data/detection_data/belgian_annotations_unprocessed.txt'
+	csv_path = '../data/detection_data/belgian_test_annotations_unprocessed.txt'
 
 path_to_box_dict = {}
 
@@ -34,7 +34,7 @@ with open(csv_path, newline='') as csv_file:
 			path_to_box_dict[file_name] = info
 
 
-with open(dataset + '_annotations.txt', 'w', newline='') as csvfile:
+with open(dataset + '_test_annotations.txt', 'w', newline='') as csvfile:
 	spamwriter = csv.writer(csvfile, delimiter=';', quotechar='', quoting=csv.QUOTE_NONE)
 
 	for key in path_to_box_dict:

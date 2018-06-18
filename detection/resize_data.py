@@ -4,9 +4,9 @@ from PIL import Image
 import csv
 
 
-root_folder = '../faster_rcnn/data/detection_data/'
+root_folder = '../data/detection_data/'
 
-german_dataset = DetectionDataset(root_dir=root_folder, use_data='belgian', use_superclass=True)
+german_dataset = DetectionDataset(root_dir=root_folder, use_data='german', use_superclass=True)
 csv_array = []
 
 for i in range(len(german_dataset)):
@@ -28,18 +28,22 @@ for i in range(len(german_dataset)):
 	image_path = german_dataset.get_file_path(i)
 	image_path = image_path.split('/')[-1]
 
-	row = [image_path]
-	row.extend(bboxes)
-
 	image = image[0]
 	image = np.moveaxis(image, 0, -1)
 	
 	im = Image.fromarray(image)
-	im.save(root_folder + 'belgian_resized/' + image_path)
+
+	if image_path[-3:] != 'jpg':
+		image_path = image_path[:-3] + 'jpg'
+
+	im.save(root_folder + 'german_jpg/' + image_path)
+
+	row = [image_path]
+	row.extend(bboxes)
 	csv_array.append(row)
 
 
-with open(root_folder + 'belgian_resized_annotations.txt', 'w', newline='') as csvfile:
+with open(root_folder + 'german_jpg_annotations.txt', 'w', newline='') as csvfile:
 	spamwriter = csv.writer(csvfile, delimiter=';', quotechar='', quoting=csv.QUOTE_NONE)
 
 	for row in csv_array:
