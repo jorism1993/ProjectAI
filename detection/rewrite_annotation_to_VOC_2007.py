@@ -9,7 +9,7 @@ trainval_split = 0.075
 val_split = 0.075
 
 
-datasets = ['german', 'belgian']
+datasets = ['german']
 if len(datasets) == 2:
 	folder_name = 'results/both/'
 else:
@@ -135,7 +135,7 @@ for dataset in datasets:
 			difficult = etree.SubElement(object, 'difficult')
 			difficult.text = '0'
 
-			bnbbox = etree.SubElement(object, 'bnbbox')
+			bnbbox = etree.SubElement(object, 'bndbox')
 			xmin = etree.SubElement(bnbbox, 'xmin')
 			xmin.text = bbox[0]
 			ymin = etree.SubElement(bnbbox, 'ymin')
@@ -152,18 +152,27 @@ for dataset in datasets:
 		path = folder_name + 'Annotations/' + name + '.xml'
 
 
+
 		if (index/len(path_to_box_dict)) < train_split:
 			with open(folder_name + 'train.txt', 'a') as myfile:
 				myfile.write(name + '\n')
+			with open(folder_name + 'traffic_sign_train.txt', 'a') as myfile:
+				myfile.write(name + ' -1\n')
 		elif (index/len(path_to_box_dict)) < (train_split + test_split):
 			with open(folder_name + 'test.txt', 'a') as myfile:
 				myfile.write(name + '\n')
+			with open(folder_name + 'traffic_sign_test.txt', 'a') as myfile:
+				myfile.write(name + ' -1\n')
 		elif (index/len(path_to_box_dict)) < (train_split + test_split + trainval_split):
 			with open(folder_name + 'trainval.txt', 'a') as myfile:
 				myfile.write(name + '\n')
+			with open(folder_name + 'traffic_sign_trainval.txt', 'a') as myfile:
+				myfile.write(name + ' -1\n')
 		elif (index/len(path_to_box_dict)) < (train_split + test_split + trainval_split + val_split):
 			with open(folder_name + 'val.txt', 'a') as myfile:
 				myfile.write(name + '\n')
+			with open(folder_name + 'traffic_sign_val.txt', 'a') as myfile:
+				myfile.write(name + ' -1\n')
 
 		tree.write(path, pretty_print=True, encoding="utf-8")
 
