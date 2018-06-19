@@ -23,10 +23,10 @@ def parse_rec(filename):
     obj_struct['truncated'] = int(obj.find('truncated').text)
     obj_struct['difficult'] = int(obj.find('difficult').text)
     bbox = obj.find('bndbox')
-    obj_struct['bbox'] = [int(bbox.find('xmin').text),
-                          int(bbox.find('ymin').text),
-                          int(bbox.find('xmax').text),
-                          int(bbox.find('ymax').text)]
+    obj_struct['bbox'] = [int(float(bbox.find('xmin').text)),
+                          int(float(bbox.find('ymin').text)),
+                          int(float(bbox.find('xmax').text)),
+                          int(float(bbox.find('ymax').text))]
     objects.append(obj_struct)
 
   return objects
@@ -98,16 +98,19 @@ def voc_eval(detpath,
   # assumes imagesetfile is a text file with each line an image name
   # cachedir caches the annotations in a pickle file
 
+
+  # cachedir = '/output'
+
   # first load gt
-  if not os.path.isdir(cachedir):
-    os.mkdir(cachedir)
-  cachefile = os.path.join(cachedir, '%s_annots.pkl' % imagesetfile)
+  # if not os.path.isdir(cachedir):
+    # os.mkdir(cachedir)
+  # cachefile = os.path.join(cachedir, '%s_annots.pkl' % imagesetfile)
   # read list of images
   with open(imagesetfile, 'r') as f:
     lines = f.readlines()
   imagenames = [x.strip() for x in lines]
 
-  if not os.path.isfile(cachefile):
+  if not os.path.isfile('/output/abcd.pkl'):
     # load annotations
     recs = {}
     for i, imagename in enumerate(imagenames):
@@ -116,12 +119,12 @@ def voc_eval(detpath,
         print('Reading annotation for {:d}/{:d}'.format(
           i + 1, len(imagenames)))
     # save
-    print('Saving cached annotations to {:s}'.format(cachefile))
-    with open(cachefile, 'wb') as f:
+    print('Saving cached annotations to {:s}'.format('/output/abcd.pkl'))
+    with open('/output/abcd.pkl', 'wb') as f:
       pickle.dump(recs, f)
   else:
     # load
-    with open(cachefile, 'rb') as f:
+    with open('/output/abcd.pkl', 'rb') as f:
       try:
         recs = pickle.load(f)
       except:
@@ -141,8 +144,9 @@ def voc_eval(detpath,
                              'det': det}
 
   # read dets
-  detfile = detpath.format(classname)
-  with open(detfile, 'r') as f:
+  # detfile = detpath.format(classname)
+  # detfile = '/output/voc_results_traffic_sign.txt'
+  with open('/output/voc_results_traffic_sign.txt', 'r') as f:
     lines = f.readlines()
 
   splitlines = [x.strip().split(' ') for x in lines]

@@ -85,7 +85,7 @@ class pascal_voc(imdb):
         """
         Construct an image path from the image's "index" identifier.
         """
-        image_path = os.path.join(self._data_path, 'JPEGImages ',
+        image_path = os.path.join(self._data_path, 'JPEGImages',
                                   index + self._image_ext)
         assert os.path.exists(image_path), \
             'Path does not exist: {}'.format(image_path)
@@ -271,11 +271,11 @@ class pascal_voc(imdb):
             if cls == '__background__':
                 continue
             print('Writing {} VOC results file'.format(cls))
-            filename = self._get_voc_results_file_template().format(cls)
-            with open(filename) as f:
-                lines = f.readlines()
-                with open("/output/voc_results_{}.txt".format(cls), 'w') as f1:
-                    f1.writelines(lines)
+            # filename = self._get_voc_results_file_template().format(cls)
+            # with open(filename) as f:
+            #     lines = f.readlines()
+            #     with open("/output/voc_results_{}.txt".format(cls), 'w') as f1:
+            #         f1.writelines(lines)
 
             with open("/output/voc_results_{}.txt".format(cls), 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
