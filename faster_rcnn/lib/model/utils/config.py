@@ -315,6 +315,7 @@ def get_output_dir(imdb, weights_filename):
   outdir = osp.join(outdir, weights_filename)
   if not os.path.exists(outdir):
     os.makedirs(outdir)
+
   return outdir
 
 
