@@ -49,6 +49,7 @@ class DetectionDataset(Dataset):
 
 		if belgian:
 			self.rescale = True
+			self.rescale_bbox = False
 			self.load_csv_to_annotation_list('belgian')
 
 		if german:
@@ -58,8 +59,8 @@ class DetectionDataset(Dataset):
 
 
 	def load_csv_to_annotation_list(self, dataset):
-		csv_path = self.root_dir + dataset + '_annotations.txt'
-		folder = dataset + '/'
+		csv_path = self.root_dir + dataset + '_resized_annotations.txt'
+		folder = dataset + '_resized/'
 		if dataset == 'belgian' or dataset == 'video':
 			extension = 'jpg'
 		if dataset == 'german':
@@ -80,6 +81,7 @@ class DetectionDataset(Dataset):
 
 	def __getitem__(self, idx):
 		img_name = os.path.join(self.root_dir, self.annotations[idx][0])
+		print(img_name)
 
 		n_bboxes = len(self.annotations[idx])
 		n_bboxes -= 1 # Don't count the name
@@ -160,8 +162,6 @@ class DetectionDataset(Dataset):
 				bbox[2] = bbox[2] * image_info[1]
 				bbox[3] = bbox[3] * image_info[0]
 
-			print(bbox)
-
 			rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=1,edgecolor='r',facecolor='none')
 			ax.add_patch(rect)
 
@@ -171,6 +171,6 @@ class DetectionDataset(Dataset):
 
 
 
-# detection_dataset = DetectionDataset(root_dir='../data/detection_data/', use_data='all')
-# print('Number of pictures:', len(detection_dataset))
-# detection_dataset.show_example()
+detection_dataset = DetectionDataset(root_dir='../data/detection_data/', use_data='all')
+print('Number of pictures:', len(detection_dataset))
+detection_dataset.show_example()

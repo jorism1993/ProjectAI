@@ -3,7 +3,7 @@ from lxml import etree
 from PIL import Image
 import os.path
 
-datasets = ['belgian', 'german']
+datasets = ['test']
 if len(datasets) == 2:
 	folder_name = 'results/both/Annotations'
 else:
@@ -17,6 +17,10 @@ for dataset in datasets:
 
 	if dataset == 'belgian':
 		csv_path = 'data/detection_data/belgian_annotations.txt'
+		bbox_length = 6
+
+	if dataset == 'test':
+		csv_path = '../data/test_data/video_annotations.txt'
 		bbox_length = 6
 
 	path_to_box_dict = {}
@@ -43,13 +47,16 @@ for dataset in datasets:
 			else:
 				path_to_box_dict[file_name] = info
 
-	for file in path_to_box_dict:
+	for index, file in enumerate(path_to_box_dict):
 		# Get appropiate image
 		image_path = csv_path.split('/')[:-1]
 		if dataset == 'german':
 			image_path.append('german_resized')
 		if dataset == 'belgian':
 			image_path.append('belgian_resized')
+		if dataset == 'test':
+			image_path.append('video')
+
 		image_path.append(file)
 		image_path = '/'.join(image_path)
 		pil_image = Image.open(image_path)
@@ -92,8 +99,10 @@ for dataset in datasets:
 		segmented.text = '0'
 
 		# Add bounding boxes to XML
+		print(path_to_box_dict[file])
 		n_bboxes = len(path_to_box_dict[file])
 		n_bboxes /= bbox_length
+		print(n_bboxes)
 		for i in range(int(n_bboxes)):
 			bbox = path_to_box_dict[file][i * bbox_length: i * bbox_length + bbox_length - 1]
 
@@ -122,3 +131,6 @@ for dataset in datasets:
 		name = os.path.splitext(file)[0]
 		path = folder_name + '/' + name + '.xml'
 		tree.write(path, pretty_print=True, encoding="utf-8")
+
+		if index == 0:
+			break
