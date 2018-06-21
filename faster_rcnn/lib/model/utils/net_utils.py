@@ -47,6 +47,7 @@ def clip_gradient(model, clip_norm):
     norm = clip_norm / max(totalnorm, clip_norm)
     for p in model.parameters():
         if p.requires_grad:
+            norm = torch.tensor([norm], device='cuda')
             p.grad.mul_(norm)
 
 def vis_detections(im, class_name, dets, thresh=0.8):

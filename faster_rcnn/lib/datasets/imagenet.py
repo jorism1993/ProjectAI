@@ -113,7 +113,7 @@ class imagenet(imdb):
                     vtmp_index = []
                     for line in tmp_index:
                         line = line.split(' ')
-                        image_list = os.popen('ls ' + self._data_path + '/Data/DET/train/' + line[0] + '/*.JPEG').read().split()
+                        image_list = os.popen('ls ' + self._data_path + 'Data/DET/train/' + line[0] + '/*.JPEG').read().split()
                         tmp_list = []
                         for imgs in image_list:
                             tmp_list.append(imgs[:-5])

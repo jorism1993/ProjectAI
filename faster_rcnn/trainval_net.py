@@ -72,7 +72,7 @@ def parse_args():
                       default=1, type=int)
   parser.add_argument('--epochs', dest='max_epochs',
                       help='number of epochs to train',
-                      default=10, type=int)
+                      default=100, type=int)
   parser.add_argument('--disp_interval', dest='disp_interval',
                       help='number of iterations to display',
                       default=1, type=int)
@@ -81,7 +81,7 @@ def parse_args():
                       default=10000, type=int)
 
   parser.add_argument('--save_dir', dest='save_dir',
-                      help='directory to save models', default="/output",
+                      help='directory to save models', default="output",
                       type=str)
   parser.add_argument('--nw', dest='num_workers',
                       help='number of worker to load data',
@@ -108,7 +108,7 @@ def parse_args():
                       default="sgd", type=str)
   parser.add_argument('--lr', dest='lr',
                       help='starting learning rate',
-                      default=0.001, type=float)
+                      default=0.0001, type=float)
   parser.add_argument('--lr_decay_step', dest='lr_decay_step',
                       help='step to do learning rate decay, unit is epoch',
                       default=5, type=int)
@@ -127,10 +127,10 @@ def parse_args():
                       default=False, type=bool)
   parser.add_argument('--checksession', dest='checksession',
                       help='checksession to load model',
-                      default=1, type=int)
+                      default=2, type=int)
   parser.add_argument('--checkepoch', dest='checkepoch',
                       help='checkepoch to load model',
-                      default=1, type=int)
+                      default=6, type=int)
   parser.add_argument('--checkpoint', dest='checkpoint',
                       help='checkpoint to load model',
                       default=0, type=int)
@@ -153,8 +153,10 @@ def _get_image_blob(im):
   """
   im_orig = im.astype(np.float32, copy=True)
   im_orig = im_orig.reshape((np.shape(im_orig)[2], np.shape(im_orig)[3], np.shape(im_orig)[1]))
-  im_orig = im_orig[:,:,::-1]
   im_orig -= cfg.PIXEL_MEANS
+
+  normalizedImg = np.zeros((np.shape(im_orig)[1], np.shape(im_orig)[2]))
+  im_orig = cv2.normalize(im_orig, normalizedImg, 0, 255, cv2.NORM_MINMAX)
 
   im_shape = im_orig.shape
   im_size_min = np.min(im_shape[0:2])
@@ -221,7 +223,7 @@ if __name__ == '__main__':
     logger = Logger('./logs')
 
   if args.dataset == "pascal_voc":
-      args.imdb_name = "voc_2007_trainval"
+      args.imdb_name = "voc_2007_train"
       args.imdbval_name = "voc_2007_test"
       args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']
   elif args.dataset == "pascal_voc_0712":
@@ -374,7 +376,6 @@ if __name__ == '__main__':
 
       data_iter = iter(dataloader)
       for step in range(iters_per_epoch):
-          print("Process step: {}/{}".format(step, iters_per_epoch))
           data = next(data_iter)
 
           im = data[0].numpy()
@@ -400,10 +401,15 @@ if __name__ == '__main__':
 
           loss = rpn_loss_cls.mean() + rpn_loss_box.mean() \
                  + RCNN_loss_cls.mean() + RCNN_loss_bbox.mean()
-          print("Temp loss: {}".format(loss.data[0]))
+
           if not np.isnan(loss.data[0]):
             loss_temp += loss.data[0]
-          print("Temp loss total: {}".format(loss_temp))
+
+          if step % 200 == 0:
+              print("Epoch: {}".format(epoch))
+              print("Process step: {}/{}".format(step, iters_per_epoch))
+              print("Temp loss: {}".format(loss.data[0]))
+              print("Temp loss total: {}\n".format(loss_temp))
           # print('{{"metric": "loss", "value": {}}}'.format(loss_temp)
 
       # backward
@@ -456,7 +462,7 @@ if __name__ == '__main__':
         start = time.time()
 
       if args.mGPUs:
-        save_name = os.path.join(output_dir, 'faster_rcnn_traffic.pth')
+        save_name = os.path.join(output_dir,  'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, epoch, args.checkpoint))
         save_checkpoint({
           'session': args.session,
           'epoch': epoch + 1,
@@ -466,7 +472,7 @@ if __name__ == '__main__':
           'class_agnostic': args.class_agnostic,
         }, save_name)
       else:
-        save_name = os.path.join(output_dir, 'faster_rcnn_traffic.pth')
+        save_name = os.path.join(output_dir,  'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, epoch, args.checkpoint))
         save_checkpoint({
           'session': args.session,
           'epoch': epoch + 1,

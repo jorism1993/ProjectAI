@@ -16,3 +16,4 @@ Papers For Students/
 
 rewrite_folder.py
 detection/data
+*.pkl

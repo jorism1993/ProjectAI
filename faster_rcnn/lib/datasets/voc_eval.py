@@ -110,7 +110,7 @@ def voc_eval(detpath,
     lines = f.readlines()
   imagenames = [x.strip() for x in lines]
 
-  if not os.path.isfile('/output/abcd.pkl'):
+  if not os.path.isfile('output/abcd.pkl'):
     # load annotations
     recs = {}
     for i, imagename in enumerate(imagenames):
@@ -119,12 +119,12 @@ def voc_eval(detpath,
         print('Reading annotation for {:d}/{:d}'.format(
           i + 1, len(imagenames)))
     # save
-    print('Saving cached annotations to {:s}'.format('/output/abcd.pkl'))
-    with open('/output/abcd.pkl', 'wb') as f:
+    print('Saving cached annotations to {:s}'.format('output/abcd.pkl'))
+    with open('output/abcd.pkl', 'wb') as f:
       pickle.dump(recs, f)
   else:
     # load
-    with open('/output/abcd.pkl', 'rb') as f:
+    with open('output/abcd.pkl', 'rb') as f:
       try:
         recs = pickle.load(f)
       except:
@@ -146,7 +146,7 @@ def voc_eval(detpath,
   # read dets
   # detfile = detpath.format(classname)
   # detfile = '/output/voc_results_traffic_sign.txt'
-  with open('/output/voc_results_traffic_sign.txt', 'r') as f:
+  with open('output/voc_results_traffic_sign.txt', 'r') as f:
     lines = f.readlines()
 
   splitlines = [x.strip().split(' ') for x in lines]

@@ -44,7 +44,7 @@ class pascal_voc(imdb):
         imdb.__init__(self, 'voc_' + year + '_' + image_set)
         self._year = year
         self._image_set = image_set
-        self._devkit_path = '/data/VOCdevkit2007'
+        self._devkit_path = 'data/VOCdevkit2007'
         self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year)
         self._classes = ('__background__', 'traffic_sign')  # always index 0)
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
@@ -277,7 +277,7 @@ class pascal_voc(imdb):
             #     with open("/output/voc_results_{}.txt".format(cls), 'w') as f1:
             #         f1.writelines(lines)
 
-            with open("/output/voc_results_{}.txt".format(cls), 'wt') as f:
+            with open("output/voc_results_{}.txt".format(cls), 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
                     dets = all_boxes[cls_ind][im_ind]
                     if dets == []:
