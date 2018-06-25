@@ -54,6 +54,7 @@ class DetectionDataset(Dataset):
 
 		if german:
 			self.rescale = True
+			self.rescale_bbox = False
 			self.load_csv_to_annotation_list('german')
 
 
