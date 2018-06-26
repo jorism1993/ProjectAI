@@ -43,7 +43,7 @@ for image in image_to_bbox_dict:
 		bbox[2] = float(bbox[2])
 		bbox[3] = float(bbox[3])
 
-		rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=1,edgecolor='r',facecolor='none')
+		rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=2,edgecolor='y',facecolor='none')
 		ax.add_patch(rect)
 
 	plt.savefig(image + '_result.png', format='png')

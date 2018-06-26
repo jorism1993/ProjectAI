@@ -9,10 +9,11 @@ import numpy as np
 import pandas as pd
 import csv
 from PIL import Image
+from data_loader import DetectionDataset
 
 
-width = 1200
-height = 800
+width = 416
+height = 416
 
 
 data_transform = transforms.Compose([
@@ -23,7 +24,7 @@ data_transform = transforms.Compose([
 
 class DetectionDataset(Dataset):
 
-	def __init__(self, root_dir, transform=data_transform, use_superclass=False, use_data='all'):
+	def __init__(self, root_dir, transform=data_transform, use_superclass=False, use_data='all', batch_size=8):
 		"""
 		Args:
 		    root_dir (string): Directory with all the images and annotation files
@@ -36,6 +37,8 @@ class DetectionDataset(Dataset):
 		self.root_dir = root_dir
 		self.transform = transform
 		self.use_superclass = use_superclass
+		self.batch_size = batch_size
+		self.current_batch_idx = 0
 
 		belgian = use_data == 'belgian' or use_data == 'all'
 		german = use_data == 'german' or use_data == 'all'
@@ -82,7 +85,6 @@ class DetectionDataset(Dataset):
 
 	def __getitem__(self, idx):
 		img_name = os.path.join(self.root_dir, self.annotations[idx][0])
-		print(img_name)
 
 		n_bboxes = len(self.annotations[idx])
 		n_bboxes -= 1 # Don't count the name
@@ -95,14 +97,17 @@ class DetectionDataset(Dataset):
 		  return (None, None, None, None)
 
 		image = np.array(image)
+		origin_im = image
+		# image = imcv2_recolor(image)
 		img_pil = Image.fromarray(image)
 
 		image_info = np.array([image.shape[0], image.shape[1], 1.5])
 
-		bboxes = np.zeros((1, 20, 5))
+		bboxes = []
+		# bboxes = np.zeros((1, 20, 5))
 
-		if n_bboxes > 20:
-			bboxes = np.zeros((1, n_bboxes, 5))
+		# if n_bboxes > 20:
+		# 	bboxes = np.zeros((1, n_bboxes, 5))
 
 		for i in range(n_bboxes):
 			bbox = self.annotations[idx][i*6+1: i*6+5]
@@ -120,18 +125,40 @@ class DetectionDataset(Dataset):
 				bbox.append(int(float(superclass_label)))
 			else:
 				bbox.append(int(float(class_label)))
-
-			bboxes[0, i, :] = bbox
+			bboxes.append(np.array(bbox))
 
 
 		image = self.transform(img_pil)
 		image = np.array(image)
 		image = np.moveaxis(image, -1, 0)
-		image = np.expand_dims(image, axis=0)
+		image = np.moveaxis(image, -1, 1)
 
-		data = (image, image_info, bboxes, n_bboxes)
+		data = (image, image_info, bboxes, n_bboxes, origin_im)
 
 		return data
+
+
+	def next_batch():
+		batch = {}
+		batch['images'] = []
+		batch['gt_boxes'] = []
+		batch['gt_classes'] = []
+		batch['dontcare'] = []
+		batch['origin_im'] = []
+
+		for i in range(self.batch_size):
+			data = self[self.current_batch_idx * self.batch_size + i]
+			batch['images'].append(data[0])
+			batch['gt_boxes'].append(data[2])
+			batch['gt_classes'].append([1])
+			batch['dontcare'] = []
+			batch['origin_im'].append(data[4])
+
+		self.current_batch_idx += 1
+		if (self.current_batch_idx+1) * self.batch_size  > len(self):
+			self.current_batch_idx = 0
+
+		return batch
 
 
 	def get_file_path(self, idx):
@@ -146,9 +173,9 @@ class DetectionDataset(Dataset):
 
 		plt.tight_layout()
 		im = sample[0]
-		im = np.squeeze(im, axis=0)
+		# im = np.squeeze(im, axis=0)
 
-		bboxes = sample[2][0]
+		bboxes = sample[2]
 		n_bboxes = sample[3]
 		image_info = sample[1]
 
@@ -166,6 +193,7 @@ class DetectionDataset(Dataset):
 			rect = patches.Rectangle((bbox[0],bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],linewidth=1,edgecolor='r',facecolor='none')
 			ax.add_patch(rect)
 
+		im = np.moveaxis(im, 1, -1)
 		im = np.moveaxis(im, 0, -1)	
 		ax.imshow(im)
 		plt.show()
