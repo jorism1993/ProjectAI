@@ -11,7 +11,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import torchvision
-import torchsample.torchsample as ts
+# import torchsample.torchsample as ts
 
 
 class GermanDataManager(object):
@@ -104,7 +104,7 @@ class GermanDataManager(object):
 
 if __name__ == '__main__':
     PATH_TO_GERMAN_DATA = os.path.join('..', '..', 'data', 'GERMAN')
-    GERMANData = GERMANDataManager(PATH_TO_GERMAN_DATA)
+    GERMANData = GermanDataManager(PATH_TO_GERMAN_DATA)
 
     resize = (100, 100)
     batch_size = 4

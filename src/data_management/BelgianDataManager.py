@@ -101,4 +101,4 @@ if __name__ == '__main__':
     batch_size = 4
     
     BelgianData.plot_a_few_images(resize)
-    data = BelgianData.load_data(batch_size, resize)
+    data = BelgianData.load_data(resize, batch_size)

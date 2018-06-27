@@ -13,7 +13,7 @@ import math
 from random import randint
 from random import uniform
 
-PATH_TO_BELGIAN_DATA = os.path.join('..','..','data','Belgian','train')
+PATH_TO_BELGIAN_DATA = os.path.join('..','..','data','GermanAndBelgian','train')
 
 class DataAugmenter(object):
     
@@ -48,6 +48,23 @@ class DataAugmenter(object):
                     
                     self.save_image(new_im, path_to_save, file_name)
                     
+    def resize_all_images(self, resize = (32,32)):
+        
+        for folder in self.image_folders:
+            path_to_folder = os.path.join(self.path_to_data, folder)
+            
+            image_list = [image for image in os.listdir(path_to_folder)
+                if image.endswith('.ppm')]
+            
+            for image in image_list:
+                im = cv2.imread(os.path.join(self.path_to_data, folder, image))
+                res = cv2.resize(im,resize)
+                
+                #print (os.path.join(self.path_to_data, folder, image))
+                
+                self.save_resized_image(os.path.join(self.path_to_data, folder, image), res)
+        
+    
     def delete_all_augmented_images(self):
         
         for folder in self.image_folders:
@@ -130,7 +147,11 @@ class DataAugmenter(object):
         
         new_im = self.random_rotate_and_crop_image(new_im)
         
-        return new_im   
+        return new_im  
+    
+    def save_resized_image(self, path, im):
+        
+        cv2.imwrite(path, im)
 
     def save_image(self, im, path, file_name):
         
@@ -266,4 +287,5 @@ class DataAugmenter(object):
     
 if __name__ == '__main__':
     DA = DataAugmenter(PATH_TO_BELGIAN_DATA)
-    gauss_im = DA.augment_belgian_images()
+    #DA.augment_belgian_images(operations_per_image=3)
+    DA.resize_all_images()
